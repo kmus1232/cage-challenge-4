@@ -1,6 +1,6 @@
-# Subnets
+# Subnets (서브넷)
 
-## Classes
+## Classes (클래스)
 
 ::: CybORG.Simulator.Scenarios.EnterpriseScenarioGenerator.SUBNET
     handler: python

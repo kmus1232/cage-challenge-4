@@ -1,4 +1,4 @@
-# DeployDecoy
+# DeployDecoy (디코이 배치)
 
 ::: CybORG.Simulator.Actions.ConcreteActions.DecoyActions.DeployDecoy.DeployDecoy
     handler: python

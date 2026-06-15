@@ -1,4 +1,4 @@
-# Discover Network Services
+# Discover Network Services (네트워크 서비스 탐색)
 ::: CybORG.Simulator.Actions.AbstractActions.DiscoverNetworkServices.DiscoverNetworkServices
     handler: python
     options:
@@ -11,7 +11,7 @@
         show_docstring_parameters: true
 
 ---
-## Aggressive Service Discovery
+## Aggressive Service Discovery (공격적 서비스 탐색)
 ::: CybORG.Simulator.Actions.AbstractActions.DiscoverNetworkServices.AggressiveServiceDiscovery
     handler: python
     options:
@@ -24,7 +24,7 @@
         show_docstring_parameters: true
 
 ---
-## Stealth Service Discovery
+## Stealth Service Discovery (은밀한 서비스 탐색)
 ::: CybORG.Simulator.Actions.AbstractActions.DiscoverNetworkServices.StealthServiceDiscovery
     handler: python
     options:
