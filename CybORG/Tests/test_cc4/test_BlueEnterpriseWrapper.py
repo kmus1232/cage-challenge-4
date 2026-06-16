@@ -187,7 +187,12 @@ def test_BlueEnterpriseWrapper_info_type(info):
 
 @pytest.fixture
 def mission_phase_list(cyborg, blue_agent):
-    '''Run several steps, which will proceed through all mission phases. Extract relevant obs value and actual mission phase and append it to output list for comparison'''
+    '''Run several steps, which will proceed through all mission phases. Extract relevant obs value and actual mission phase and append it to output list for comparison
+
+    [한국어]
+    여러 스텝(step)을 실행하면 모든 미션 단계(mission phase)를 순서대로 거친다.
+    각 시점의 관찰값(Observation)에서 미션 단계 값과 실제 미션 단계를 뽑아
+    비교용 출력 리스트에 추가한다.'''
     results, _ = cyborg.reset()
     mission_value = results[blue_agent][CURRENT_MISSION_INDEX]
     mission_phase = cyborg.get_attr("environment_controller").state.mission_phase
@@ -201,12 +206,18 @@ def mission_phase_list(cyborg, blue_agent):
     return blue_observations
 
 def test_BlueEnterpriseWrapper_mission_phase(mission_phase_list):
-    '''Here we test the first entry in the vector corresponds to the mission phase'''
+    '''Here we test the first entry in the vector corresponds to the mission phase
+
+    [한국어]
+    관찰값 벡터의 첫 번째 원소가 미션 단계(mission phase)와 일치하는지 검증한다.'''
     assert [x==y for x,y in mission_phase_list] == [True for x in range(len(mission_phase_list))]
 
 @pytest.fixture(params=range(NUM_AGENTS-1), ids=[f'blue_agent_{x}' for x in range(NUM_AGENTS-1)])
 def blue_agent_short(request):
-    '''Blue agents 0-3 which are responsible for 1 subnet only.'''
+    '''Blue agents 0-3 which are responsible for 1 subnet only.
+
+    [한국어]
+    서브넷 1개만 담당하는 Blue 에이전트 0~3을 가리킨다.'''
     return f'blue_agent_{request.param}'
 
 @pytest.fixture
@@ -224,13 +235,20 @@ def reset_obs_short(cyborg, blue_agent_short):
     return results[0][blue_agent_short]
 
 def test_BlueEnterpriseWrapper_blocked_reset(reset_obs_short, blue_agent_short):
-    '''Test there are no blocked values at begining of episode'''
+    '''Test there are no blocked values at begining of episode
+
+    [한국어]
+    에피소드(Episode) 시작 시점에는 차단(blocked)된 값이 없음을 검증한다.'''
     blocked_values = reset_obs_short[BLOCKED_SUBNETS_SLICE]
 
     assert (blocked_values == np.zeros(NUM_SUBNETS)).all()
 
 def test_BlueEnterpriseWrapper_blocked_step(cyborg, blue_agent_short, blue_subnet):
-    '''Manually block several hosts and check observation contains them'''
+    '''Manually block several hosts and check observation contains them
+
+    [한국어]
+    여러 호스트를 수동으로 차단한 뒤, 관찰값(Observation)에 그 차단 정보가
+    반영되는지 검증한다.'''
     state = cyborg.get_attr("environment_controller").state
     subnet_names = sorted([k.lower() for k in state.subnet_name_to_cidr])
     blue_subnet_name = state.subnets_cidr_to_name[blue_subnet]
@@ -296,6 +314,7 @@ def network(mission_phase):
     }
 
     # The above matrix corresponds to the documentation
+    # 위 인접 행렬은 문서(documentation)의 통신 정책과 일치한다.
     names = [
         'office_network_subnet',
         'admin_network_subnet',
@@ -323,7 +342,11 @@ def expected_comms_policy(network, blue_agent_short, cyborg):
     return np.logical_not(matrix[nodelist.index(agent_subnet)])
 
 def test_BlueEnterpriseWrapper_comms_policy_reset(reset_obs_short, blue_agent_short, expected_comms_policy, mission_phase):
-    """Tests the ideal comms policy for the mission phase."""
+    """Tests the ideal comms policy for the mission phase.
+
+    [한국어]
+    해당 미션 단계(mission phase)에서의 이상적인 통신 정책(comms policy)을 검증한다.
+    """
     if mission_phase != 'Preplanning':
         return
 
@@ -340,7 +363,10 @@ def test_BlueEnterpriseWrapper_comms_policy_step(cyborg, blue_agent_short, expec
     assert (comms_block == expected_comms_policy).all()
 
 def test_BlueEnterpriseWrapper_process_events_reset(reset_obs_short):
-    '''Beginning of episode has no process alerts'''
+    '''Beginning of episode has no process alerts
+
+    [한국어]
+    에피소드(Episode) 시작 시점에는 프로세스 경보(process alert)가 없음을 검증한다.'''
     host_events_block = reset_obs_short[MALICIOUS_PROCESS_SLICE]
     assert (host_events_block == np.zeros(MAX_NUM_HOSTS)).all()
 
@@ -361,7 +387,12 @@ def hostname(cyborg, blue_agent_short, hostname_index):
     return subnet_hosts[hostname_index] if hostname_index < len(subnet_hosts) else None
 
 def test_BlueEnterpriseWrapper_process_events_step(cyborg, blue_agent_short, hostname, hostname_index):
-    '''Here we check process creation on a host is detected. If the subnet has less than maximum number of hosts, there will be several hosts will value None. In this case the test automatically passes'''
+    '''Here we check process creation on a host is detected. If the subnet has less than maximum number of hosts, there will be several hosts will value None. In this case the test automatically passes
+
+    [한국어]
+    호스트에서 발생한 프로세스 생성(process creation)이 탐지되는지 검증한다.
+    서브넷의 호스트 수가 최대치보다 적으면 값이 None인 호스트가 생기며,
+    이 경우 테스트는 자동으로 통과한다.'''
     if hostname is None:
         return
 
@@ -431,7 +462,10 @@ def test_BlueEnterpriseWrapper_zone_step(step_obs_short, cyborg, blue_agent_shor
     assert (subnet_events_block==np.array(subvector)).all()
 
 def test_BlueEnterpriseWrapper_message_reset(reset_obs, blue_agent):
-    '''Check there are no messages sent during the reset phase.'''
+    '''Check there are no messages sent during the reset phase.
+
+    [한국어]
+    reset 단계에서는 전송된 메시지(message)가 없음을 검증한다.'''
     message_slice = LONG_MESSAGE_SLICE if blue_agent == HQ_AGENT else MESSAGE_SLICE
     message_block = reset_obs[message_slice]
     assert (message_block == np.zeros(NUM_MESSAGES * MESSAGE_LENGTH)).all()

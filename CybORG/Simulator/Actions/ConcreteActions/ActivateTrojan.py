@@ -15,6 +15,7 @@ class ActivateTrojan(Action):
         if self.hostname not in state.hosts:
             return Observation(False)
         # create new root session
+        # 새 root 세션을 생성한다
         agent = 'red_agent_' + self.hostname.split('_')[-1]
         if agent in state.sessions and 0 in state.sessions[agent]:
             self.log(f"Agent '{agent}' already has a session '0'")
@@ -29,5 +30,6 @@ class ActivateTrojan(Action):
         )
         state.add_session(session)
         # remove other sessions
+        # 해당 호스트의 다른 세션들을 제거한다
         sub_action = RemoveOtherSessions_AlwaysSuccessful(session.ident, agent, level='privileged')
         return sub_action.execute(state)

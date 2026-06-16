@@ -13,12 +13,21 @@ BROADCAST_ADDRESS = IPv4Address('0.0.0.0')
 
 class Observation:
     """Class that holds the observation data for the environment at a step in the episode
-    
+
     Attributes
     ----------
     data : Dict[str, _]
         dictionary of agent observation data
     raw : str
+
+    [한국어]
+    에피소드의 한 스텝(step)에서 환경의 관찰값(Observation) 데이터를 담는 클래스.
+    에이전트가 그 스텝에 무엇을 관찰했는지를 dict 형태로 모아둔다.
+
+    속성
+    - data : 에이전트 관찰값을 담는 dict. 호스트별 정보(프로세스/인터페이스/
+      파일/사용자/세션 등)와 행동(Action)의 성공 여부("success")가 들어간다.
+    - raw : 가공 전 원본(raw) 관찰값을 담는 문자열.
     """
 
     def __init__(self, success: Union[bool, CyEnums.TernaryEnum] = CyEnums.TernaryEnum.UNKNOWN, msg:str = None):
@@ -29,25 +38,42 @@ class Observation:
             success of the action in the observation
         msg : str
             the message, if any, communicated by the agents
+
+        [한국어]
+        관찰값을 초기화한다.
+
+        매개변수
+        - success : 이 관찰값이 대응하는 행동(Action)의 성공 여부.
+          bool 또는 TernaryEnum(TRUE/FALSE/UNKNOWN 3값)을 받는다.
+        - msg : 에이전트들이 주고받은 메시지(있을 경우).
         """
+        # success가 TernaryEnum이 아니면(예: bool) TernaryEnum 값으로 변환한다.
         if not isinstance(success, CyEnums.TernaryEnum):
             success = CyEnums.TernaryEnum.parse_bool(success)
         self.data = {"success": success}
-        
+
         if msg is not None:
             self.data['message'] = msg
         self.raw = ''
 
     def get_dict(self):
-        """Returns the data of the observation"""
+        """Returns the data of the observation
+
+        [한국어]
+        관찰값 dict(data)를 그대로 반환한다.
+        """
         return self.data
 
     def set_success(self, success: Union[bool, CyEnums.TernaryEnum]):
-        """Sets the success value of the data dictionary 
-        
+        """Sets the success value of the data dictionary
+
         Parameters
         ----------
         success : Union[bool, CyEnums.TrinaryEnum]
+
+        [한국어]
+        data dict의 "success"(행동 성공 여부) 값을 설정한다.
+        bool로 들어오면 TernaryEnum 값으로 변환해 저장한다.
         """
         if isinstance(success, bool):
             success = CyEnums.TernaryEnum.parse_bool(success)
@@ -99,6 +125,15 @@ class Observation:
         process_version: str
         vulnerability: str
         properties: Optional[list[str]]
+
+        [한국어]
+        관찰값 안의 특정 호스트에 프로세스(Process) 정보를 추가한다.
+        같은 PID의 프로세스가 이미 있으면 기존 항목을 꺼내 갱신(병합)한다.
+        포트·주소·프로토콜 등 연결 정보가 함께 들어오면 Connections에 묶어 넣는다.
+
+        매개변수: 호스트 id, PID, 부모 PID, 프로세스/프로그램/서비스 이름,
+        사용자명, 경로, 로컬/원격 포트·주소, 애플리케이션/전송 프로토콜, 상태,
+        프로세스 종류·버전, 취약점(vulnerability), 속성(properties) 등.
         """
         if hostid is None:
             hostid = str(len(self.data))
@@ -107,11 +142,15 @@ class Observation:
 
         new_process = {}
 
+        # pid가 None이면 대문자 PID 인자 값을 대신 사용한다(둘 다 받는 호환 처리).
         pid = PID if pid is None else pid
         if pid is not None:
             pid = int(pid)
             if pid < 0:
                 raise ValueError
+            # [설명] 같은 PID의 기존 프로세스가 있으면 그 항목을 꺼내 new_process로
+            # 삼고(목록에서 제거), 아래에서 새 정보를 덧붙여 다시 추가한다. 즉
+            # 중복 생성 대신 기존 항목을 갱신(병합)하는 방식이다.
             for old_process in self.data[hostid]["Processes"]:
                 if old_process.get("PID", None) == pid:
                     new_process = old_process
@@ -179,6 +218,7 @@ class Observation:
                 status = CyEnums.ProcessState.parse_string(status)
             new_connection["Status"] = status
 
+        # 연결 정보가 있으면 Connections에 추가하고, 비어 있으면 빈 Connections 키를 제거한다.
         if new_connection:
             new_process["Connections"].append(new_connection)
         elif new_process["Connections"] == []:
@@ -205,6 +245,8 @@ class Observation:
 
         self.data[hostid]["Processes"].append(new_process)
 
+        # [설명] 실제로 채워진 프로세스 정보가 하나도 없어 호스트에 빈 프로세스만
+        # 남은 경우, 의미 없는 항목이므로 해당 호스트 자체를 data에서 제거한다.
         if self.data[hostid] == {"Processes": [{}]}:
             self.data.pop(hostid)
 
@@ -233,8 +275,15 @@ class Observation:
         os_patches: list
         architecture: str
         local_time: datetime
-        position: tuple 
+        position: tuple
+
+        [한국어]
+        관찰값 안의 특정 호스트에 시스템 정보(System info)를 추가한다.
+        호스트명, OS 종류·배포판·버전·커널, OS 패치 목록, 아키텍처,
+        로컬 시각, 위치(position) 등을 담는다.
+        문자열로 들어온 값은 대응하는 Enum 값으로 변환해 저장한다.
         """
+        # hostid가 없으면 현재 data 크기를 문자열로 만들어 임시 id로 쓴다.
         hostid = hostid or str(len(self.data))
         self.data.setdefault(hostid, {})
         self.data[hostid].setdefault("System info", {})
@@ -290,6 +339,8 @@ class Observation:
 
     def update_file_with_kwargs(self, kwargs):
         # TEMPORARY FOR REFACTORING. DELETE WHEN DONE.
+        # [설명] 리팩터링 중 임시 디버깅용. kwargs로 들어온 키들을 keys.txt에
+        # 누적 기록해 어떤 키가 쓰이는지 파악하기 위한 코드이며, 작업 완료 시 삭제 예정.
         filename = "./keys.txt"
         if kwargs:
             existing_keys = set()
@@ -322,6 +373,12 @@ class Observation:
         ip_address: Union[str, IPv4Address]
         subnet: Union[str, IPv4Network]
         blocked_ips: list
+
+        [한국어]
+        관찰값 안의 특정 호스트에 네트워크 인터페이스(Interface) 정보를 추가한다.
+        인터페이스명, IP 주소, 서브넷(Subnet), 차단 IP 목록(blocked_ips),
+        네트워크 연결 정보 등을 담는다.
+        같은 인터페이스명·IP를 가진 기존 항목이 있으면 꺼내 갱신(병합)한다.
         """
         hostid = hostid or str(len(self.data))
         self.data.setdefault(hostid, {})
@@ -339,10 +396,15 @@ class Observation:
         if ip_address is not None:
             if isinstance(ip_address, str):
                 ip_address = IPv4Address(ip_address)
+            # [설명] 브로드캐스트 주소(0.0.0.0)는 특정 호스트 정보로 의미가 없으므로
+            # 인터페이스에 추가하지 않고, 비어 있는 Interface 키는 정리한 뒤 반환한다.
             if ip_address == BROADCAST_ADDRESS:
                 if self.data[hostid]["Interface"] == []:
                     self.data[hostid].pop("Interface")
                 return
+            # [설명] 같은 IP를 가진 기존 인터페이스들을 훑어 병합한다. 정보가 더 많은
+            # (키 개수가 큰) 쪽을 기준으로 삼고, 키 개수가 같으면 누락된
+            # interface_name·Subnet만 보충한다. 병합한 기존 항목은 목록에서 제거한다.
             for interface in self.data[hostid]["Interface"]:
                 if interface.get("ip_address", None) != ip_address:
                     continue
@@ -369,6 +431,7 @@ class Observation:
 
         self.data[hostid]["Interface"].append(new_interface)
 
+        # 실제 채워진 내용 없이 빈 인터페이스만 남으면 Interface 키를 제거한다.
         if self.data[hostid]["Interface"] == [{}]:
             self.data[hostid].pop("Interface")
 
@@ -406,6 +469,12 @@ class Observation:
         last_modified_time: datetime
         signed: bool
         density: float
+
+        [한국어]
+        관찰값 안의 특정 호스트에 파일(File) 정보를 추가한다.
+        경로, 파일명, 벤더, 버전, 파일 종류, 소유 사용자·그룹과 각 권한,
+        기본 권한, 최종 수정 시각, 서명 여부(signed), 밀도(density) 등을 담는다.
+        파일명과 경로가 모두 일치하는 기존 항목이 있으면 꺼내 갱신(병합)한다.
         """
 
         hostid = hostid or str(len(self.data))
@@ -423,6 +492,8 @@ class Observation:
             new_file["File Name"] = name
             new_file["Known File"] = CyEnums.FileType.parse_string(name)
 
+        # [설명] 파일명과 경로가 모두 같은 기존 파일이 있으면 그 항목을 꺼내
+        # new_file로 삼고(목록에서 제거), 아래에서 새 정보를 덧붙여 갱신한다.
         if name is not None and path is not None:
             for file in self.data[hostid]["Files"]:
                 if file.get("File Name", None) == name and file.get("Path", None) == path:
@@ -505,10 +576,18 @@ class Observation:
         password_hash_type: str
         logged_in: bool
         key_path: str
+
+        [한국어]
+        관찰값 안의 특정 호스트에 사용자(User) 정보를 추가한다.
+        사용자명·uid, 비밀번호·해시·해시 종류, 로그인 여부, 키 경로와
+        소속 그룹(group_name/gid 또는 Groups 목록) 정보를 담는다.
+        같은 사용자명·그룹이 있으면 기존 항목을 갱신(병합)한다.
         """
         hostid = hostid or str(len(self.data))
 
         # only add user to dict if username or uid is known
+        # [설명] 사용자명 또는 uid 중 하나라도 있어야 사용자 항목을 만든다.
+        # 둘 다 없으면 식별 불가능하므로 추가하지 않는다.
         if username is not None or uid is not None:
             self.data.setdefault(hostid, {})
             self.data[hostid].setdefault("User Info", [])
@@ -543,6 +622,8 @@ class Observation:
             if key_path is not None:
                 new_user["key_path"] = key_path
 
+            # [설명] 이 사용자의 기존 그룹 목록에서 같은 그룹명 또는 같은 GID를
+            # 가진 그룹이 있으면 꺼내(목록에서 제거) new_group으로 삼아 갱신한다.
             new_group = {}
             new_user.setdefault("Groups", [])
             for groups in new_user["Groups"]:
@@ -553,6 +634,8 @@ class Observation:
                     new_user["Groups"].remove(groups)
                     break
 
+            # Groups 목록이 통째로 주어지면 그대로 대체하고, 아니면 group_name으로
+            # 단일 그룹을 구성한다. 알려진 빌트인 그룹이면 그 정보도 함께 기록한다.
             if Groups is not None:
                 new_user["Groups"] = Groups
             elif group_name is not None:
@@ -571,6 +654,9 @@ class Observation:
 
             self.data[hostid]["User Info"].append(new_user)
 
+        # [설명] gid와 group_name이 모두 주어지면, 이 호스트의 모든 사용자 그룹 중
+        # 둘 중 하나라도 일치하는 그룹을 찾아 GID·그룹명을 동일하게 맞춘다.
+        # (gid<->group_name 매핑을 사용자 전반에 걸쳐 일관되게 보정하는 단계)
         if gid is not None and group_name is not None:
             for user in self.data.get(hostid, {}).get("User Info", []):
                 for group in user.get("Groups", []):
@@ -603,6 +689,12 @@ class Observation:
         timeout: int
         pid: int
         session_type: str
+
+        [한국어]
+        관찰값 안의 특정 호스트에 세션(Session) 정보를 추가한다.
+        사용자명, 세션 id, 소유 에이전트(agent), 타임아웃, PID, 세션 종류를 담는다.
+        같은 에이전트·세션 id의 기존 세션이 있으면 갱신하고, 중복 세션은 추가하지 않는다.
+        agent는 반드시 지정해야 하며, 없으면 ValueError를 발생시킨다.
         """
         hostid = hostid or str(len(self.data))
         self.data.setdefault(hostid, {})
@@ -610,6 +702,8 @@ class Observation:
 
         new_session = {}
         if session_id is not None:
+            # [설명] 같은 agent + session_id를 가진 기존 세션을 찾아 그 항목을
+            # 갱신 대상으로 삼는다(is_same). 없으면 session_id만 채운 새 dict로 시작한다.
             sessions = self.data[hostid]["Sessions"]
             is_same = lambda s: s.get("agent", None) == agent and s.get("session_id", None) == session_id
             new_session = next((s for s in sessions if is_same(s)), {"session_id": session_id})
@@ -627,6 +721,7 @@ class Observation:
         pid = kwargs.get("PID", None) if pid is None else pid
         if pid is not None:
             new_session["PID"] = pid
+            # 세션에 PID가 있으면 그 PID로 동작하는 프로세스도 함께 관찰값에 추가한다.
             self.add_process(hostid=hostid, pid=pid, username=username)
 
         session_type = session_type or kwargs.get("Type", None)
@@ -641,6 +736,7 @@ class Observation:
 
         if new_session not in self.data[hostid]["Sessions"]:
             # check we aren't adding duplicate
+            # 중복 세션이 아닌 경우에만 목록에 추가한다.
             self.data[hostid]["Sessions"].append(new_session)
 
     def combine_obs(self, obs):
@@ -650,18 +746,30 @@ class Observation:
         ----------
         obs : Observation
             the other observation
+
+        [한국어]
+        다른 관찰값(obs)을 이 관찰값에 병합한다.
+        호스트별로 세션·프로세스·사용자·파일·인터페이스·시스템 정보를 각
+        add_* 메서드로 다시 넣어 합치므로, 중복 병합 규칙이 그대로 적용된다.
+        병합 후 자기 자신(self)을 반환한다.
         """
+        # obs가 Observation 객체면 내부 data dict를 꺼내 사용한다.
         if not isinstance(obs, dict):
             obs = obs.data
         for key, info in obs.items():
+            # "success"·"action"은 호스트 정보가 아니므로 병합 대상에서 건너뛴다.
             if key in ["success", "action"]:
                 # self.set_success(info)
                 continue
+            # 값이 dict가 아니면(호스트 단위 정보가 아니면) 키-값 그대로 저장한다.
             if not isinstance(info, dict):
                 self.add_key_value(key, info)
                 continue
             for session_info in info.get("Sessions", []):
                 self.add_session_info(hostid=key, **session_info)
+            # [설명] 프로세스는 연결(Connections)을 가질 수 있다. 연결이 있으면
+            # 연결 하나마다 프로세스 정보(**process)와 연결 정보(**conn)를 함께
+            # 넘겨 add_process를 호출한다(연결별로 한 번씩). 연결이 없으면 한 번만 호출한다.
             for process in info.get("Processes", []):
                 if 'Connections' in process:
                     for conn in process['Connections']:
@@ -680,14 +788,18 @@ class Observation:
 
     def add_raw_obs(self, raw_obs):
         """Replaces the current raw observation with a new raw observation.
-        
+
         Parameters
         ----------
         raw_obs
+
+        [한국어]
+        현재 원본(raw) 관찰값을 새 raw 관찰값으로 교체한다.
         """
         self.raw = raw_obs
 
     def add_key_value(self, key, val):
+        # 임의의 키-값 쌍을 관찰값 dict에 직접 저장한다.
         self.data[key] = val
 
     def add_action_obs_pair(self, action, obs):
@@ -702,6 +814,10 @@ class Observation:
             the action
         obs : Observation
             the observation
+
+        [한국어]
+        행동(Action)-관찰값(Observation) 쌍을 이 관찰값에 추가한다.
+        여러 행동의 관찰값을 하나의 관찰값으로 묶어 돌려줄 때 사용한다.
         """
         self.data.setdefault("action_obs", []).append((action, obs))
 
@@ -712,6 +828,10 @@ class Observation:
         -------
         bool
             True if Observation has nested observations
+
+        [한국어]
+        이 관찰값이 중첩된(nested) 관찰값들을 담고 있는지 여부를 반환한다.
+        중첩 관찰값이 있으면 True.
         """
         return "action_obs" in self.data
 
@@ -722,6 +842,9 @@ class Observation:
         -------
         list((Action, Observation))
             any nested observations
+
+        [한국어]
+        중첩된 (행동, 관찰값) 쌍들의 목록을 반환한다. 없으면 빈 목록.
         """
         return self.data.get("action_obs", [])
 
@@ -732,6 +855,10 @@ class Observation:
         -------
         list(dict)
             list of session info
+
+        [한국어]
+        관찰값에 담긴 모든 세션 정보를 하나의 목록으로 모아 반환한다.
+        호스트 정보에 "Sessions" 키가 없으면 경고를 남기고 건너뛴다.
         """
         sessions = []
         for k, v in self.data.items():
@@ -755,6 +882,9 @@ class Observation:
         -------
         list(dict)
             list of session info
+
+        [한국어]
+        지정한 에이전트(agent)가 소유한 세션 정보만 골라 목록으로 반환한다.
         """
         sessions = []
         for session_info in self.get_sessions():
@@ -784,8 +914,20 @@ class Observation:
         include_localhost : bool, optional
             If True and ips is not None, will include localhost address
             ('127.0.0.1') in IP addresses to keep (default=True)
+
+        [한국어]
+        관찰값을 제자리(in place)에서 걸러, 지정한 주소에 해당하는 정보만 남긴다.
+        목록에 없는 주소의 관찰 정보는 제거한다. 또한 주소가 하나 이상 관찰됐지만
+        그 어느 것도 목록에 없는 호스트는 해당 호스트 관찰 정보 전체를 제거한다.
+
+        매개변수
+        - ips : 남길 IP 주소 목록. None이면 IP 기준 필터링을 하지 않는다.
+        - cidrs : 남길 CIDR(서브넷) 주소 목록. None이면 CIDR 기준 필터링을 하지 않는다.
+        - include_localhost : True이고 ips가 None이 아니면 localhost('127.0.0.1')도
+          남길 IP에 포함한다(기본 True).
         """
         # convert lists to set of str for fast lookup and consistent typing
+        # 빠른 조회와 일관된 타입을 위해 목록을 set으로 변환한다.
         if ips is None:
             ip_set = set()
         else:
@@ -801,13 +943,16 @@ class Observation:
             if include_localhost:
                 cidr_set.add(IPv4Network('127.0.0.0/8'))
 
-        filter_hosts = []
+        filter_hosts = []  # 통째로 제거할 호스트 키를 모아둔다.
         for obs_k, obs_v in self.data.items():
+            # 값이 중첩 Observation이면 재귀적으로 같은 필터를 적용한다.
             if isinstance(obs_v, Observation):
                 obs_v.filter_addresses(ips, cidrs, include_localhost)
             elif not isinstance(obs_v, dict):
                 continue
 
+            # [설명] 프로세스의 연결 주소(local/remote)가 남길 IP 집합에 없으면
+            # 그 프로세스 인덱스를 제거 대상에 모은다(중복 추가 방지).
             filter_procs = []
             for i, proc in enumerate(obs_v.get("Processes", [])):
                 for conn in proc.get("Connections", []):
@@ -817,12 +962,15 @@ class Observation:
 
             # Must remove indices in reverse order, else risk incorrect proc
             # being removed
+            # [설명] 리스트에서 인덱스로 삭제할 때는 큰 인덱스부터(역순) 지워야
+            # 앞 항목 삭제로 뒤 인덱스가 밀려 엉뚱한 항목이 지워지는 것을 막는다.
             for p_idx in sorted(filter_procs, reverse=True):
                 del obs_v["Processes"][p_idx]
 
             if "Processes" in obs_v and len(obs_v["Processes"]) == 0:
                 del obs_v["Processes"]
 
+            # 인터페이스의 IP 또는 Subnet이 남길 집합에 없으면 제거 대상에 모은다.
             filter_interfaces = []
             for i, interface in enumerate(obs_v.get("Interface", [])):
                 check_ip = "IP Address" in interface and interface["IP Address"] not in ip_set
@@ -830,35 +978,51 @@ class Observation:
                 if check_ip or check_subnet:
                     filter_interfaces.append(i)
 
+            # 프로세스와 동일하게 역순으로 삭제한다.
             for i_idx in sorted(filter_interfaces, reverse=True):
                 del obs_v["Interface"][i_idx]
 
             if "Interface" in obs_v and len(obs_v["Interface"]) == 0:
                 del obs_v["Interface"]
 
+            # 필터링 결과 호스트에 남은 정보가 하나도 없으면 호스트 자체를 제거 대상으로 표시한다.
             if len(list(obs_v.values())) == 0:
                 filter_hosts.append(obs_k)
 
+        # 순회가 끝난 뒤(반복 중 dict 변경 회피) 비어버린 호스트들을 제거한다.
         for host_k in filter_hosts:
             del self.data[host_k]
 
     @property
     def success(self):
-        """Success of the action that the observation 'observes'"""
+        """Success of the action that the observation 'observes'
+
+        [한국어]
+        이 관찰값이 '관찰하는' 행동의 성공 여부(TernaryEnum)를 반환한다.
+        """
         return self.data["success"]
 
     @property
     def action_succeeded(self) -> bool:
-        """Check the success of the action that the observation 'observes'"""
+        """Check the success of the action that the observation 'observes'
+
+        [한국어]
+        이 관찰값이 '관찰하는' 행동이 성공(TRUE)했는지를 bool로 반환한다.
+        UNKNOWN/FALSE는 모두 False가 된다.
+        """
         return self.data["success"] == CyEnums.TernaryEnum.TRUE
 
     def copy(self):
         """Creates a copy of the observation.
-        
+
         Returns
         -------
         obs_copy : Observation
             copy of the current observation
+
+        [한국어]
+        이 관찰값의 복사본을 만들어 반환한다.
+        중첩 Observation은 재귀적으로 copy()하고, 그 외 값은 deepcopy로 깊은 복사한다.
         """
         obs_copy = Observation()
         for k, v in self.data.items():
@@ -873,6 +1037,8 @@ class Observation:
         return f"{self.__class__.__name__}:\n{obs_str}"
 
     def __eq__(self, other):
+        # [설명] self의 모든 키-값이 other에 같은 값으로 존재하면 같다고 본다.
+        # other에만 있는 추가 키는 검사하지 않으므로 엄밀한 양방향 동치는 아니다.
         if type(other) is not Observation:
             return False
         for k, v in self.data.items():

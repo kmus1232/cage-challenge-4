@@ -3,6 +3,9 @@
 
 """
 pertaining to the Juicy Potato permissions escalation action
+
+[한국어]
+Juicy Potato 권한 상승 행동(Action)에 관한 모듈.
 """
 # pylint: disable=invalid-name
 from typing import Tuple
@@ -15,6 +18,9 @@ from CybORG.Simulator.Process import Process
 class JuicyPotato(EscalateAction):
     """
     Implements the Juicy Potato permissions escalation action
+
+    [한국어]
+    Juicy Potato 권한 상승 행동(Action)을 구현한다.
     """
     USER = "SYSTEM"
 

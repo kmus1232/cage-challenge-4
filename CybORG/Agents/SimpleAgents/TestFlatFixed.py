@@ -25,7 +25,7 @@ class TestFlatFixedAgent(BaseAgent):
         if self.len_obs is None:
             self.len_obs = len(observation)
         assert self.len_obs == len(observation)
-        return random.choice(range(action_space))  # Assuming action_space is a list
+        return random.choice(range(action_space))  # Assuming action_space is a list  # action_space가 리스트라고 가정한다
 
     def end_episode(self):
         pass

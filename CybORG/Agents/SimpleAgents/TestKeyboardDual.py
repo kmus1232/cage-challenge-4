@@ -28,7 +28,7 @@ def print_subnet_host_agents_info(env):
             for id, session in env.state.sessions[agent_name].items():
                 print(agent_name, id, session)
     
-    # printing to check movement 
+    # printing to check movement  # 에이전트 이동(세션 이전)을 확인하려고 출력한다
     for agent, session in env.state.hosts['contractor_network_subnet_server_host_0'].sessions.items():
         if len(session)>0:
             print(agent, session)

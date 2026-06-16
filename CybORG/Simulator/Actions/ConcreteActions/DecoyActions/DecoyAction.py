@@ -23,6 +23,19 @@ class DecoyAction(Action):
         The agent executing the action.
     hostname: str
         The hostname of the host targeted by the action.
+
+    [한국어]
+    지정한 호스트에 Decoy(디코이, 미끼) 서비스를 생성한다.
+    디코이 서비스를 노린 익스플로잇(원격 서비스 공격)은 자동으로 실패한다.
+
+    매개변수
+    --------
+    session: int
+        행동(Action)을 실행하는 세션의 id.
+    agent: str
+        행동을 실행하는 에이전트.
+    hostname: str
+        행동의 대상이 되는 호스트의 호스트명.
     """
     DECOY_TYPE: DecoyType = None
     CANDIDATE_DECOYS: Set[DecoyFactory] = set()
@@ -38,6 +51,18 @@ class DecoyAction(Action):
             The agent executing the action.
         hostname: str
             The hostname of the host targeted by the action.
+
+        [한국어]
+        DecoyAction 클래스를 생성한다.
+
+        매개변수
+        --------
+        session: int
+            행동(Action)을 실행하는 세션의 id.
+        agent: str
+            행동을 실행하는 에이전트.
+        hostname: str
+            행동의 대상이 되는 호스트의 호스트명.
         """
         super().__init__()
         self.agent = agent
@@ -50,11 +75,24 @@ class DecoyAction(Action):
         ----------
         state: State
             The current state of CybORG.
-        
+
         Returns
         -------
         obs: Observation
             The observation to be returned to the agent.
+
+        [한국어]
+        디코이를 생성하는 행동(Action)을 실행한다.
+
+        매개변수
+        --------
+        state: State
+            CybORG의 현재 상태.
+
+        반환값
+        ------
+        obs: Observation
+            에이전트에게 반환할 관찰값(Observation).
         """
         obs_fail = Observation(False)
         obs_succeed = Observation(True)
@@ -75,6 +113,10 @@ class DecoyAction(Action):
         """
         Examines all decoy factories and returns one randomly compatible one.
         Raises RuntimeError if no compatible ones are found.
+
+        [한국어]
+        모든 디코이 팩토리를 검사해 호환되는 것 중 하나를 무작위로 반환한다.
+        호환되는 팩토리가 없으면 RuntimeError를 발생시킨다.
         """
         compatible_factories = [
             factory for factory in self.CANDIDATE_DECOYS if factory.is_host_compatible(host)
@@ -87,6 +129,10 @@ class DecoyAction(Action):
         """
         Creates a process & service from Decoy on current host, adds it
         to the observation.
+
+        [한국어]
+        현재 호스트에 Decoy(디코이)로부터 프로세스와 서비스를 생성하고,
+        그 내용을 관찰값(Observation)에 추가한다.
         """
         parent_pid = 1
         pid = host.create_pid()

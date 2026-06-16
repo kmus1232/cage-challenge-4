@@ -16,16 +16,19 @@ class RemoveOtherSessions_Parent(LocalAction):
         if self.session in state.sessions[self.agent]:
             hostname = state.sessions[self.agent][self.session].hostname
             # find sessions to remove
+            # [한국어] 제거 대상 세션을 찾는다(같은 호스트의 다른 에이전트 세션 중 권한 조건을 만족하는 것).
             sus_pids = []
             for agent, sessions in state.sessions.items():
                 if agent == self.agent: continue
                 for session in sessions.values():
                     if hostname != session.hostname: continue
+                    # [설명] 제거 권한 판정: level(privileged/user/low)에 따라 어떤 username의 세션까지 제거할 수 있는지 결정한다.
                     user_has_privileges = (
                         session.username != 'hardware' and (self.level == 'privileged') or
                         (self.level == 'user' and session.username not in ['root', 'SYSTEM', 'hardware']) or
                         (self.level == 'low' and session.username in ['NetworkService'])
                     )
+                    # [설명] success_rate 확률로 성공: 난수가 (1 - success_rate)보다 클 때만 해당 세션을 제거 대상에 넣는다.
                     if user_has_privileges and (1 - self.success_rate) < state.np_random.random():
                         sus_pids.append(session.pid)
                         obs.set_success(True)

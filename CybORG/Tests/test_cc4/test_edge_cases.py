@@ -26,6 +26,11 @@ def test_degrade_deception_interaction(cyborg: CybORG):
     Here we wait until red gets onto an appropriate host. Then we create haraka decoy process,
     kill it with degrade services, then bring it back up with another decoy action. This can create
     a contradiction between the service pid and process pid
+
+    [한국어]
+    Red가 적절한 호스트에 침투할 때까지 기다린다. 그 다음 haraka 디코이(Decoy) 프로세스를 만들고,
+    Degrade Services(서비스 성능 저하)로 그 프로세스를 죽인 뒤, 또 다른 디코이 행동으로 되살린다.
+    이 과정에서 서비스의 pid와 프로세스의 pid가 서로 어긋나는 모순이 발생할 수 있다.
     '''
     cyborg.reset(seed=85)
     state = cyborg.environment_controller.state
@@ -51,6 +56,10 @@ def test_degrade_deception_interaction(cyborg: CybORG):
     '''
     If you have no empty steps below, then the test crashes due to Finite Red State agent.
     If you only have one, then the Decoy actions gets lucky and recreates the right pid.
+
+    [한국어]
+    아래에 빈 스텝(step)이 하나도 없으면 FiniteStateRedAgent 때문에 테스트가 크래시한다.
+    빈 스텝이 하나뿐이면 디코이(Decoy) 행동이 운 좋게 올바른 pid를 다시 만들어 버린다.
     '''
     cyborg.step()
     cyborg.step()

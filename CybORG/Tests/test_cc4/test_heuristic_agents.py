@@ -9,7 +9,12 @@ from CybORG.Agents import SleepAgent, RandomSelectRedAgent, EnterpriseGreenAgent
 
 @pytest.fixture(params=[RandomSelectRedAgent, FiniteStateRedAgent])
 def cyborg(request):
-    """CybORG is given a 1000 step time limit to give enough time for wierd agent behaviour to occur."""
+    """CybORG is given a 1000 step time limit to give enough time for wierd agent behaviour to occur.
+
+    [한국어]
+    CybORG에 1000 스텝(step)의 시간 제한을 둔다. 이상 동작(weird agent behaviour)이
+    드러날 만큼 충분한 시간을 주기 위함이다.
+    """
     seed = random.randint(0, 9999)
     print("Seed:", seed)
     sg = EnterpriseScenarioGenerator(

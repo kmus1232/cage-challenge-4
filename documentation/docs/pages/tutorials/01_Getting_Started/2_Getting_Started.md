@@ -1,20 +1,27 @@
-# Getting Started With CybORG
+# Getting Started With CybORG (CybORG 시작하기)
 
-## Importing CybORG
+## Importing CybORG (CybORG 임포트하기)
 
 To use the CybORG environment, it is necessary to import the `CybORG` class. 
 
+> CybORG 환경을 사용하려면 `CybORG` 클래스를 임포트해야 합니다.
+
 !!! tip "Capitalisation"
     CybORG stands for '**C**yber **O**perations **R**esearch **G**ym', so remember to capitalise correctly when importing!
+
+    > **대소문자 표기 주의**: CybORG는 '**C**yber **O**perations **R**esearch **G**ym'의 약자입니다. 임포트할 때 대소문자를 정확히 맞춰 작성해야 합니다.
 
 ```python title="getting_started.py" linenums="1"
 from CybORG import CybORG
 ```
 
-## Instantiating CybORG
+## Instantiating CybORG (CybORG 인스턴스 생성하기)
 
 CybORG has to be manually instantiated by calling the class constructor. This must be passed a `ScenarioGenerator` class, which contains the details of the scenario.
 For Challenge 4, we will be using the `EnterpriseScenarioGenerator`, which creates the correct scenario.
+
+> CybORG는 클래스 생성자를 호출해 직접 인스턴스를 만들어야 합니다. 이때 시나리오(Scenario)의 세부 정보를 담은 `ScenarioGenerator` 클래스를 인자로 넘겨야 합니다.
+> Challenge 4에서는 적합한 시나리오를 생성해 주는 `EnterpriseScenarioGenerator`를 사용합니다.
 
 ```python linenums="2"
 from CybORG.Simulator.Scenarios import EnterpriseScenarioGenerator
@@ -23,11 +30,15 @@ sg = EnterpriseScenarioGenerator()
 cyborg = CybORG(scenario_generator=sg)
 ```
 
-## Interfacing with the Environment 
+## Interfacing with the Environment (환경과 상호작용하기)
 
 CAGE Challenge 4 (CC4) is a multi-agent scenario consisting of several teams of agents. The Red team will be attacking the network, Blue team will be defending the network, while Green team represents the network users who will be passing messages to each other via the enterpise network. For this challenge, the roles of Red and Green will be handled by internal rules-based agents, while your task is to use an external API to train the Blue Team. This guide will walk you through the first steps for interfacing with the Blue agents.
 
+> CAGE Challenge 4(CC4)는 여러 팀의 에이전트로 구성된 다중 에이전트(multi-agent) 시나리오입니다. Red 팀(공격 측)은 네트워크를 공격하고, Blue 팀(방어 측)은 네트워크를 방어하며, Green 팀(정상 사용자)은 엔터프라이즈 네트워크를 통해 서로 메시지를 주고받는 네트워크 사용자를 나타냅니다. 이 챌린지에서 Red와 Green의 역할은 내부에 내장된 규칙 기반(rules-based) 에이전트가 담당하고, 여러분의 과제는 외부 API를 사용해 Blue 팀을 학습시키는 것입니다. 이 가이드는 Blue 에이전트와 상호작용하는 첫 단계를 안내합니다.
+
 A good starting point for developing your own rule-based agent is the `BlueFixedActionWrapper`. This wrapper provides a covenient API for enumerating all the actions that are available to each Blue agent in each episode, while providing direct access to CybORG's observations.
+
+> 직접 규칙 기반 에이전트를 개발할 때 좋은 출발점은 `BlueFixedActionWrapper`입니다. 이 래퍼(Wrapper)는 각 에피소드(Episode)에서 Blue 에이전트마다 사용할 수 있는 모든 행동(Action)을 나열해 주는 편리한 API를 제공하며, 동시에 CybORG의 관찰값(Observation)에 직접 접근할 수 있게 해 줍니다.
 
 ```python linenums="6"
 from CybORG.Agents.Wrappers import BlueFixedActionWrapper
@@ -42,6 +53,8 @@ print(obs.keys())
 ```
 
 ???+ Quote "Code Output"
+    > **코드 출력 결과**
+
     ```
     dict_keys(['blue_agent_0', 'blue_agent_1', 'blue_agent_2', 'blue_agent_3', 'blue_agent_4'])
     ```
@@ -51,8 +64,12 @@ print(obs['blue_agent_0'])
 ```
 
 ??? Quote "Code Output (CybORG Observation)"
+    > **코드 출력 결과 (CybORG 관찰값)**
+
     ???+ Note
         For more information on CybORG observations, see [Tutorial 2 - Looking Around](../02_Looking_Around/1_Observations.md).
+
+        > CybORG 관찰값(Observation)에 대한 자세한 내용은 [Tutorial 2 - Looking Around](../02_Looking_Around/1_Observations.md)를 참고하세요.
 
     ```python
     {
@@ -249,15 +266,23 @@ This list will always show all the actions that the given agent could take in CC
 However, some hosts might not exist for the duration of an episode, and as a result, their corresponding
 actions will have no effect. This is reflected in the list with a `[Invalid]` prefix.
 
+> 사람이 읽기 쉬운 형태의 행동(Action) 레이블 전체 목록은 `action_labels` 함수로 확인할 수 있습니다.
+> 이 목록에는 해당 에이전트가 CC4에서 취할 수 있는 모든 행동이 항상 표시됩니다.
+> 다만 일부 호스트(Host)는 에피소드(Episode) 진행 중 존재하지 않을 수 있으며, 그 경우 해당 호스트에 대응하는 행동은 아무런 효과가 없습니다. 이런 행동은 목록에서 `[Invalid]` 접두사로 표시됩니다.
+
 ```python linenums="16"
 print(env.action_space('blue_agent_0'))
 print(env.action_labels('blue_agent_0'))
 ```
 
 ??? Quote "Code Output (Actions)"
+    > **코드 출력 결과 (행동 목록)**
+
     ???+ Note
         For more information on the action helpers, see
         [Wrappers - BlueFixedActionWrapper](../02_Looking_Around/3_Wrappers.md#bluefixedactionwrapper).
+
+        > 행동(Action) 관련 헬퍼 함수에 대한 자세한 내용은 [Wrappers - BlueFixedActionWrapper](../02_Looking_Around/3_Wrappers.md#bluefixedactionwrapper)를 참고하세요.
 
     ```python
     Discrete(82)
@@ -354,6 +379,10 @@ If the specified action is invalid for the current episode, the agent will simpl
 do nothing. This function returns the next observation, rewards for the agents,
 the termination and truncation signals for each agent, and the info dictionary.
 
+> CybORG 환경에서 행동(Action)을 취할 때는 `env.step()` 메서드를 사용합니다.
+> 이 메서드는 딕셔너리를 인자로 받는데, 키(key)는 에이전트 이름이고 값(value)은 해당 에이전트의 행동 공간(Action Space) 안에서 특정 행동을 가리키는 인덱스입니다.
+> 지정한 행동이 현재 에피소드(Episode)에서 유효하지 않으면, 해당 에이전트는 아무 행동도 하지 않습니다. 이 함수는 다음 관찰값(Observation), 각 에이전트의 보상(Reward), 각 에이전트별 종료(termination)·중단(truncation) 신호, 그리고 info 딕셔너리를 반환합니다.
+
 ```python linenums="18"
 actions = {'blue_agent_0': 42} # 'Restore restricted_zone_a_subnet_user_host_3'
 obs, reward, terminated, truncated, info = env.step(actions)
@@ -361,6 +390,8 @@ print(reward['blue_agent_0'])
 ```
 
 ???+ Quote "Code Output"
+    > **코드 출력 결과**
+
     ```python
     -4.0
     ```
@@ -368,6 +399,9 @@ print(reward['blue_agent_0'])
 Challenge 4 provides a mechanism to optionally send 8-bit messages between agents.
 This is achieved by supplying the `step` function with a dictionary of agents and
 a corresponding `np.array` with 8 binary elements.
+
+> Challenge 4는 에이전트끼리 선택적으로 8비트 메시지를 주고받을 수 있는 메커니즘을 제공합니다.
+> 이를 위해 `step` 함수에 에이전트와, 각 에이전트에 대응하는 8개의 이진(binary) 요소로 이루어진 `np.array`를 담은 딕셔너리를 함께 넘깁니다.
 
 ```python linenums="21"
 import numpy as np
@@ -377,6 +411,8 @@ print(obs['blue_agent_1']['message'])
 ```
 
 ???+ Quote "Code Output (Messages)"
+    > **코드 출력 결과 (메시지)**
+
     ```python
     [
         array([ True, False, False, False, False, False, False, False]), # Blue 0
@@ -386,10 +422,12 @@ print(obs['blue_agent_1']['message'])
     ]
     ```
 
-## Reinforcement Learning Agents
+## Reinforcement Learning Agents (강화학습 에이전트)
 
 Since CybORG observations can be quite verbose, we have included the `BlueFlatWrapper` to
 convert the observations into a fixed-size vector format that is convenient for RL agents.
+
+> CybORG의 관찰값(Observation)은 상당히 장황할 수 있기 때문에, 이를 강화학습(RL) 에이전트가 다루기 편한 고정 크기 벡터 형식으로 변환해 주는 `BlueFlatWrapper`를 함께 제공합니다.
 
 ```python linenums="6"
 from CybORG.Agents.Wrappers import BlueFlatWrapper
@@ -405,9 +443,13 @@ print('Observation:', obs['blue_agent_0'])
 ```
 
 ???+ Quote "Code Output"
+    > **코드 출력 결과**
+
     ???+ Note
         For a full breakdown of how the observation vectors are structured,
         see [Appendix B](../../README.md#appendix-b-agent-observation).
+
+        > 관찰값(Observation) 벡터가 어떻게 구성되는지에 대한 전체 설명은 [Appendix B](../../README.md#appendix-b-agent-observation)를 참고하세요.
 
     ```python 
     Space: MultiDiscrete(
@@ -426,7 +468,12 @@ print('Observation:', obs['blue_agent_0'])
     This can be enabled by passing `pad_spaces = True` to the `BlueFlatWrapper`. This will pad the
     observation space with zeros, and pad the action space with the `Sleep` action.
 
+    > 일부 강화학습(RL) 라이브러리는 모든 에이전트의 관찰 공간(Observation Space)과 행동 공간(Action Space) 크기가 동일하기를 요구합니다.
+    > 이 경우 `BlueFlatWrapper`에 `pad_spaces = True`를 넘기면 됩니다. 그러면 관찰 공간은 0으로, 행동 공간은 `Sleep` 행동으로 채워(pad) 크기를 맞춰 줍니다.
+
 ???+ Note "RLlib"
     For an RLlib-compatible, `MultiAgentEnvironment` version of the above wrapper use
     `from CybORG.Agents.Wrappers import EnterpriseMAE` in place of `BlueFlatWrapper`.
+
+    > **RLlib**: 위 래퍼(Wrapper)를 RLlib과 호환되는 `MultiAgentEnvironment` 형태로 쓰려면, `BlueFlatWrapper` 대신 `from CybORG.Agents.Wrappers import EnterpriseMAE`를 사용하세요.
     

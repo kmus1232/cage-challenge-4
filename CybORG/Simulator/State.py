@@ -62,6 +62,36 @@ class State(CybORGLogger):
         Boolean represeting whether the Operational Server in Scenario 2 has a firewall protecting it. Unused in later scenarios.
     blocks: Dict[str:List[str]]
         Dictionary mapping hostames to a list of hostnames they will block actions from.
+
+    [한국어]
+    네트워크 상태(State)를 시뮬레이션하는 클래스.
+
+    시뮬레이션 네트워크의 모든 데이터(IP, 서브넷, 호스트, 세션)를 담는다. 메서드
+    대부분은 네트워크 상태를 수정하지만, 실제 작업은 주로 Host 클래스에 위임한다.
+
+    주요 속성(Attributes):
+    - np_random: CybORG 내부의 모든 무작위 이벤트를 결정하는 난수 생성기.
+    - scenario: 초기 State를 만드는 데 쓰이는 Scenario 객체.
+    - subnet_name_to_cidr: 서브넷 이름 -> CIDR 주소 매핑.
+    - ip_addresses: IP 주소 -> 호스트명 매핑.
+    - hostname_ip_map: 호스트명 -> IP 주소 매핑.
+    - hostname_subnet_map: 호스트명 -> 서브넷 Enum 객체 매핑.
+    - hosts: 호스트명 -> Host 객체 매핑.
+    - sessions: 에이전트명 -> (세션 id -> Session 객체) 매핑. 세션 id는 정수다.
+    - subnets: IP(CIDR) -> Subnet 객체 매핑.
+    - link_diagram: 어떤 호스트끼리 직접 통신 가능한지 나타내는 NetworkX 그래프.
+      호스트 간 행동(Action) 라우팅에 사용한다.
+    - connected_components: 서로 연결된 호스트명 집합들의 리스트. 어떤 호스트
+      사이에 경로가 없는지 식별하는 데 쓴다.
+    - sessions_count: 에이전트명 -> 해당 에이전트가 네트워크 전체에서 제어하는
+      세션 수 매핑.
+    - mission_phase: 현재 미션 단계 번호(정수).
+    - original_time: 2020년 1월 1일로 고정된 시각. 미사용이나, Restore된 호스트
+      백업의 타임스탬프 용도로 의도되었다.
+    - time: 시뮬레이션상의 현재 시각. 미사용이나, 타임스탬프 용도로 의도되었다.
+    - operational_firewall: Scenario 2의 Operational Server에 방화벽이 있는지
+      여부. 이후 시나리오에서는 미사용.
+    - blocks: 호스트명 -> 해당 호스트가 행동을 차단할 호스트명 리스트 매핑.
     """
     def __init__(self, scenario: Scenario, np_random: RandomNumberGenerator):
         """Instantiates State class.
@@ -72,24 +102,40 @@ class State(CybORGLogger):
             Object used to create initial State from Scenario Object.
         np_random: numpy.random._generator.Generator
             Used to resolve all random events inside CybORG.
+
+        [한국어]
+        State 클래스를 생성한다.
+
+        매개변수(Parameters):
+        - scenario: 초기 State를 만드는 데 쓰이는 Scenario 객체.
+        - np_random: CybORG 내부의 모든 무작위 이벤트를 결정하는 난수 생성기.
         """
 
         self.np_random: RandomNumberGenerator = np_random
         self.scenario = scenario
         self.subnet_name_to_cidr = {}  # contains mapping of subnet names to subnet cidrs
+        # 서브넷 이름 -> 서브넷 CIDR 매핑
         self.ip_addresses = {}  # contains mapping of ip addresses to hostnames
+        # IP 주소 -> 호스트명 매핑
         self.hostname_ip_map = {}  # contains mapping of hostnames to ip addresses
+        # 호스트명 -> IP 주소 매핑
         self.hostname_subnet_map = {}  # contains mapping of hostnames to subnet name
+        # 호스트명 -> 서브넷 이름 매핑
 
         self.hosts: Dict[str, Host] = {}  # contains mapping of hostnames to host objects
+        # 호스트명 -> Host 객체 매핑
         self.sessions: Dict[str, Dict[int, Session]] = {}  # contains mapping of agent names to mapping of session id to session objects
+        # 에이전트명 -> (세션 id -> Session 객체) 매핑
         self.subnets: Dict[IPv4Network, Subnet] = {}  # contains mapping of subnet cidrs to subnet objects
+        # 서브넷 CIDR -> Subnet 객체 매핑
         self.subnets_cidr_to_name = {}  # contains mapping of subnet cidrs to subnet names
+        # 서브넷 CIDR -> 서브넷 이름 매핑
 
         self.link_diagram = None
         self.connected_components = None
 
         self.sessions_count = {}  # contains a mapping of agent name to number of sessions
+        # 에이전트명 -> 세션 수 매핑
         for subnet_name, subnet in scenario.subnets.items():
             self.subnet_name_to_cidr[subnet_name] = subnet.cidr
             self.subnets_cidr_to_name[subnet.cidr] = subnet_name
@@ -106,10 +152,13 @@ class State(CybORGLogger):
             for agent in scenario.agents:
                 self.hosts[hostname].sessions[agent] = []
 
+        # [설명] 부모(parent) 세션이 자식 세션보다 먼저 등록되어 있어야 하므로,
+        #        부모 없는 세션을 1차로 생성한 뒤 부모 있는 세션을 2차로 연결한다.
         for agent, agent_info in scenario.agents.items():
             self.sessions[agent] = {}
             self.sessions_count[agent] = 0
             # instantiate parentless sessions first
+            # 부모 없는 세션을 먼저 생성한다
             for starting_session in agent_info.starting_sessions:
                 if starting_session.parent is None:
                     starting_session.ident = self.sessions_count[agent]
@@ -138,12 +187,13 @@ class State(CybORGLogger):
             host.create_backup()
 
         self._setup_data_links()
-        
+
         self.mission_phase = 0
         self.original_time = datetime(2020, 1, 1, 0, 0)
         self.time = copy.deepcopy(self.original_time)
 
         # hacky fix to enable operational firewall for Scenario1b and Scenario2
+        # Scenario1b·Scenario2에서 operational firewall를 켜기 위한 임시방편 처리
         self.operational_firewall = scenario.operational_firewall
         self.blocks: Dict[str, List[str]] = {}
 
@@ -166,6 +216,20 @@ class State(CybORGLogger):
         -------
         true_obs: dict
             Dictionary containing the requested information from the state.
+
+        [한국어]
+        state에서 요청된 정보만 추려 담은 딕셔너리를 만든다.
+
+        디버깅·평가 용도로 의도되었다. 에이전트는 필터링되지 않은 state를 직접
+        볼 수 없어야 한다. info 딕셔너리는 호스트명을 키로 가지며, 각 호스트마다
+        어떤 하위 요소(키)에서 어떤 속성(값)을 뽑아낼지 지정한다. 예시는 위
+        영어 docstring 참고.
+
+        매개변수(Parameters):
+        - info: 정보를 걸러낼 때 쓰는 딕셔너리.
+
+        반환값(Returns):
+        - true_obs: state에서 요청된 정보만 담은 딕셔너리.
         """
         true_obs = Observation()
         if info is None:
@@ -224,13 +288,20 @@ class State(CybORGLogger):
         return true_obs
 
     def _setup_data_links(self):
-        """Sets up the data links object for the initial state."""
+        """Sets up the data links object for the initial state.
+
+        [한국어]
+        초기 state의 데이터 링크(data link) 객체를 구성한다.
+        """
         # create the link diagram
+        # 링크 다이어그램 생성
         self.link_diagram = nx.Graph()
         # add hosts to link diagram
+        # 링크 다이어그램에 호스트들을 노드로 추가
         for hostname in self.hosts.keys():
             self.link_diagram.add_node(hostname)
         # add datalink connections between hosts
+        # 호스트 간 데이터 링크 연결(엣지) 추가
         for hostname, host_info in self.hosts.items():
             for interface in host_info.interfaces:
                 if interface.interface_type == 'wired':
@@ -240,11 +311,17 @@ class State(CybORGLogger):
 
     def set_np_random(self, np_random):
         """Sets up the np_random object at the beginning of the scenario.
-        
+
         Parameters
         ----------
         np_random: numpy.random._generator.Generator
             The random number genetator to resolve CybORG's internal events.
+
+        [한국어]
+        시나리오 시작 시점에 np_random 객체를 설정한다.
+
+        매개변수(Parameters):
+        - np_random: CybORG 내부 이벤트를 결정하는 난수 생성기.
         """
         self.np_random = np_random
         for hostname in self.hosts:
@@ -255,7 +332,7 @@ class State(CybORGLogger):
         """Computes the Eulcidian distance between two points.
 
         Intended for use with DroneSwarmScenarioGenerator to compute distance between drones.
-        
+
         Parameters
         ----------
         pos_a: float
@@ -266,6 +343,18 @@ class State(CybORGLogger):
         -------
         distance: int
             The distance between the two points provided.
+
+        [한국어]
+        두 점 사이의 유클리드 거리를 계산한다.
+
+        DroneSwarmScenarioGenerator에서 드론 간 거리를 계산하는 용도다.
+
+        매개변수(Parameters):
+        - pos_a: 첫 번째 드론의 위치.
+        - pos_b: 두 번째 드론의 위치.
+
+        반환값(Returns):
+        - distance: 두 점 사이의 거리.
         """
         return sqrt((pos_a[0]-pos_b[0])**2+(pos_a[1]-pos_b[1])**2)
 
@@ -273,7 +362,15 @@ class State(CybORGLogger):
         """Updates the links between drones.
 
         Intended for use with DroneSwarmScenarioGenerator. Drones which are too far apart will have their data links dropped. Drones that come into range will establish datalinks.
+
+        [한국어]
+        드론 간 데이터 링크를 갱신한다.
+
+        DroneSwarmScenarioGenerator 용도다. 너무 멀어진 드론은 데이터 링크가
+        끊기고, 통신 범위 안으로 들어온 드론끼리는 새로 링크를 맺는다.
         """
+        # [설명] 무선(wireless) 인터페이스를 가진 호스트가 하나라도 있을 때만
+        #        거리 기반 링크 재계산을 수행한다. 유선만 있으면 링크는 고정이다.
         if any([any([j.interface_type == 'wireless' for j in i.interfaces]) for i in self.hosts.values()]):
             distances = {hostname: {hostname: 0.} for hostname in self.hosts.keys()}
             for hostname, host_info in self.hosts.items():
@@ -282,6 +379,9 @@ class State(CybORGLogger):
                         distances[hostname][hostname2] = self.dist(host_info.position, host_info2.position)
                         distances[hostname2][hostname] = distances[hostname][hostname2]
 
+            # [설명] 무선 인터페이스마다 통신 범위(max_range) 안의 호스트만 새
+            #        데이터 링크로 잡는다. 그 뒤 끊긴 링크는 그래프에서 엣지를
+            #        제거하고, 새로 생긴 링크는 엣지를 추가해 link_diagram을 맞춘다.
             for hostname, host_info in self.hosts.items():
                 for interface in host_info.interfaces:
                     if interface.interface_type != 'wired':
@@ -291,12 +391,14 @@ class State(CybORGLogger):
                             for other_hostname in self.hosts
                             if distances[hostname][other_hostname] < interface.max_range
                         ]
+                        # 기존 링크 중 범위를 벗어난 것은 끊는다
                         for dl in old_data_links:
                             if dl not in interface.data_links:
                                 self.link_diagram.remove_edge(hostname, dl)
                             for interface2 in self.hosts[dl].interfaces:
                                 if hostname in interface2.data_links:
                                     interface2.data_links.remove(hostname)
+                        # 새로 범위 안으로 들어온 링크는 엣지로 추가한다
                         for dl in interface.data_links:
                             if dl not in old_data_links:
                                 self.link_diagram.add_edge(hostname, dl)
@@ -304,10 +406,19 @@ class State(CybORGLogger):
 
     def add_session(self, session: Session):
         """Adds a session to the specified host.
-        
+
         Sessions with usernames 'root' or 'SYSTEM' are considered privileged.
-        If process is none then a PID will be created randomly. 
+        If process is none then a PID will be created randomly.
         If the session is a sandbox, then the PrivilegeEscalate action will not work on this host. Created only when exploiting an deceptive service.
+
+        [한국어]
+        지정한 호스트에 세션을 추가한다.
+
+        - 사용자명이 'root' 또는 'SYSTEM'인 세션은 권한 있는(privileged) 세션으로
+          간주한다.
+        - process가 없으면 PID를 무작위로 생성한다.
+        - 세션이 sandbox이면 해당 호스트에서 권한 상승(PrivilegeEscalate) 행동이
+          동작하지 않는다. 디코이(deceptive) 서비스를 익스플로잇할 때만 생성된다.
         """
         if session.ident is None:
             if len(self.sessions[session.agent]) > 0:
@@ -328,7 +439,7 @@ class State(CybORGLogger):
         """Adds a file to the specified host.
 
         This is based on Linux file permissions.
-        
+
         Parameters
         ----------
         host: str
@@ -351,6 +462,22 @@ class State(CybORGLogger):
         -------
         file: File
             The file to be added to the host.
+
+        [한국어]
+        지정한 호스트에 파일을 추가한다. Linux 파일 권한 체계를 따른다.
+
+        매개변수(Parameters):
+        - host: 파일을 추가할 호스트명.
+        - name: 추가할 파일명.
+        - path: 대상 호스트에서의 파일 경로.
+        - user: 파일 소유자(사용자).
+        - user_permissions: 파일 소유자의 권한.
+        - group: 파일이 속한 그룹.
+        - group_permissions: 파일 그룹의 권한.
+        - default_permissions: 기본 사용자(그 외)의 권한.
+
+        반환값(Returns):
+        - file: 호스트에 추가된 File 객체.
         """
         host_obj = self.hosts[host]
         new_file = File(
@@ -382,6 +509,18 @@ class State(CybORGLogger):
         -------
         user: User
             The user to be added to the host.
+
+        [한국어]
+        지정한 호스트에 사용자를 추가한다.
+
+        매개변수(Parameters):
+        - host: 사용자를 추가할 호스트명.
+        - username: 추가할 사용자명.
+        - password: 추가할 사용자의 비밀번호.
+        - password_hash_type: 비밀번호에 적용할 해시 알고리즘.
+
+        반환값(Returns):
+        - user: 호스트에 추가된 User 객체.
         """
         host = self.hosts[host]
 
@@ -389,13 +528,20 @@ class State(CybORGLogger):
 
     def remove_process(self, hostname: str, pid: int):
         """Removes a process from the specified host.
-        
+
         Parameters
         ----------
         hostname: str
             The name of the host having the process removed.
         pid: int
             The process id of the process to be removed.
+
+        [한국어]
+        지정한 호스트에서 프로세스를 제거한다.
+
+        매개변수(Parameters):
+        - hostname: 프로세스를 제거할 호스트명.
+        - pid: 제거할 프로세스의 PID.
         """
         host = self.hosts[hostname]
         process = host.get_process(pid)
@@ -403,6 +549,9 @@ class State(CybORGLogger):
             return
         agent, session = self.get_session_from_pid(hostname=hostname, pid=pid)
         host.processes.remove(process)
+        # [설명] 제거 대상 PID가 활성 서비스의 프로세스이면, 서비스 자체는 살려둔
+        #        채 PID만 비우고 프로세스를 다시 등록한다(service=True). 이 경우
+        #        아래에서 세션을 재생성해 서비스가 계속 동작하도록 한다.
         pids = [service.process for service in host.services.values() if service.active]
         if process.pid in pids:
             process.pid = None
@@ -414,6 +563,7 @@ class State(CybORGLogger):
             return
         host.sessions[agent].remove(session)
         session = self.sessions[agent].pop(session)
+        # 서비스 프로세스였다면 세션을 다시 추가해 서비스를 유지한다
         if service:
             self.add_session(session)
 
@@ -421,7 +571,7 @@ class State(CybORGLogger):
         """Searches the target host for a session with the specified PID.
 
         Returns None, None if not found.
-        
+
         Parameters
         ----------
         hostname: str
@@ -435,6 +585,17 @@ class State(CybORGLogger):
             Name of the agent owning the found session.
         session_index: int
             The Session id of the found session.
+
+        [한국어]
+        대상 호스트에서 지정한 PID를 가진 세션을 찾는다. 없으면 None, None을 반환한다.
+
+        매개변수(Parameters):
+        - hostname: 검색할 호스트명.
+        - pid: 찾을 프로세스의 PID.
+
+        반환값(Returns):
+        - agent: 찾은 세션을 소유한 에이전트명.
+        - session_index: 찾은 세션의 세션 id.
         """
         for agent, sessions in self.sessions.items():
             for session_index, session in sessions.items():
@@ -443,7 +604,11 @@ class State(CybORGLogger):
         return None, None
 
     def reboot_host(self, hostname):
-        """Unused. Used by deprecated action."""
+        """Unused. Used by deprecated action.
+
+        [한국어]
+        미사용. 폐기된(deprecated) 행동에서 쓰이던 메서드다.
+        """
         host = self.hosts[hostname]
         for agent, sessions in host.sessions.items():
             for session in sessions:
@@ -458,6 +623,7 @@ class State(CybORGLogger):
                 host.files.remove(file)
 
         # start back up
+        # 재기동(restart) — 기본 프로세스 목록으로 되돌린다
         host.processes = host.default_processes.copy()
 
         for servicename, service in host.services.items():
@@ -466,36 +632,53 @@ class State(CybORGLogger):
 
     def stop_service(self, hostname: str, service_name: str):
         """Stops the target service on the specified host.
-        
+
         Parameters
         ----------
         hostname: str
             The name of the host to stop the service on.
         service_name: str
             The name of the service to stop.
+
+        [한국어]
+        지정한 호스트에서 대상 서비스를 중지한다.
+
+        매개변수(Parameters):
+        - hostname: 서비스를 중지할 호스트명.
+        - service_name: 중지할 서비스명.
         """
         # stops a service, its process, and associated sessions
+        # 서비스와 그 프로세스, 연관된 세션을 함께 중지한다
         process = self.hosts[hostname].stop_service(service_name)
         self.remove_process(hostname, process)
 
     def start_service(self, hostname: str, service_name: str):
         """Starts the target service on the specified host.
-        
+
         Parameters
         ----------
         hostname: str
             The name of the host to start the service on.
         service_name: str
             The name of the service to start.
+
+        [한국어]
+        지정한 호스트에서 대상 서비스를 시작한다.
+
+        매개변수(Parameters):
+        - hostname: 서비스를 시작할 호스트명.
+        - service_name: 시작할 서비스명.
         """
         # stops a service, its process, and associated sessions
+        # (원문 주석은 stop 기준이나, 이 메서드는 서비스를 시작한다. 시작된
+        #  서비스에 세션이 생기면 state에 세션을 추가한다.)
         process, session = self.hosts[hostname].start_service(service_name)
         if session is not None:
             self.add_session(session)
 
     def get_subnet_containing_ip_address(self, ip_address: IPv4Address) -> Subnet:
         """Returns the subnet containing the specified ip address.
-        
+
         Parameters
         ----------
         ip_address: IPv4Address
@@ -505,6 +688,15 @@ class State(CybORGLogger):
         -------
         subnet: Subnet
             The subnet containing the specified ip address.
+
+        [한국어]
+        지정한 IP 주소를 포함하는 서브넷을 반환한다.
+
+        매개변수(Parameters):
+        - ip_address: 서브넷을 찾을 대상 IP 주소.
+
+        반환값(Returns):
+        - subnet: 해당 IP 주소를 포함하는 Subnet 객체.
         """
         for subnet in self.subnets.values():
             if subnet.contains_ip_address(ip_address):
@@ -523,12 +715,23 @@ class State(CybORGLogger):
         -------
         change: bool
             True if mission phased changed otherwise False
+
+        [한국어]
+        State의 스텝(step) 수와 미션 단계 번호를 갱신한다.
+
+        매개변수(Parameters):
+        - step: 현재 스텝 수.
+
+        반환값(Returns):
+        - change: 미션 단계가 바뀌었으면 True, 아니면 False.
         """
 
         new_mission_phase = None
         min_step = 0
         max_step = 0
 
+        # [설명] 각 미션 단계는 누적 구간 [min_step, max_step)을 차지한다. 단계별
+        #        스텝 크기를 차례로 더해가며 현재 step이 속한 구간을 찾는다.
         for phase_num, phase_step_size in enumerate(self.scenario.mission_phases):
             min_step = max_step
             max_step = min_step + phase_step_size

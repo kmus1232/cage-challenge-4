@@ -178,6 +178,7 @@ def test_add_info_process_5(add_info_process_5):
 def add_network_process_info_1(create_observation):
     observation = create_observation
     # add single listening UDP port
+    # 리스닝 상태의 단일 UDP 포트를 추가한다
     observation.add_process(hostid="test", pid=1, local_address="0.0.0.0", local_port=80, app_protocol="HTTP")
     return observation
 
@@ -198,6 +199,7 @@ def test_add_network_process_info_1(add_network_process_info_1):
 def add_network_process_info_2(add_network_process_info_1):
     observation = add_network_process_info_1
     # add a remote HTTP connection
+    # 원격 HTTP 연결을 추가한다
     observation.add_process(hostid="test", pid=1, remote_port=80, remote_address="10.0.0.1", app_protocol="TCP")
     return observation
 
@@ -224,6 +226,7 @@ def test_add_network_process_info_2(add_network_process_info_2):
 def add_network_process_info_3(add_network_process_info_2):
     observation = add_network_process_info_2
     # add local ephemeral port connection
+    # 로컬 임시(ephemeral) 포트 연결을 추가한다
     observation.add_process(hostid="test", pid=1, local_port=52435, local_address="10.0.0.2", app_protocol="TCP")
     return observation
 
@@ -364,6 +367,7 @@ def test_add_file_info(add_file_info):
     assert file["Default Permissions"] == 7
 
     # TODO needs to be completed once the enums are complete
+    # TODO enum 정의가 완성되면 이 테스트도 보완해야 한다
 
 
 @pytest.fixture()
@@ -465,6 +469,7 @@ def add_user_info5(create_observation):
 
 
 # this is a known issue with the current implementation of the observation. The order of adding a group should not affect the solution
+# 현재 observation 구현의 알려진 이슈다. 그룹을 추가하는 순서가 결과에 영향을 주어서는 안 된다(그래서 아래 테스트는 비활성화됨)
 # def test_add_user_info_5(add_user_info5):
 #     observation = add_user_info5
 #     assert len(observation.get_dict()) == 2

@@ -1,4 +1,4 @@
-# RLlib Wrapper: EnterpriseMAE
+# RLlib Wrapper: EnterpriseMAE (RLlib 래퍼: EnterpriseMAE)
 ::: CybORG.Agents.Wrappers.EnterpriseMAE.EnterpriseMAE
     handler: python
     options:

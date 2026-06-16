@@ -62,6 +62,27 @@ class Host(Entity):
     ephemeral_ports: List[int]
     services: Dict[str, Dict[str,[bool, int]]
 
+    [한국어]
+    호스트의 내부(파일, 프로세스, 인터페이스 등)를 시뮬레이션하는 클래스.
+    이 클래스의 메서드들은 호스트의 상태를 바꾸는 데 쓰인다.
+
+    Host는 호스트 1대의 모든 관련 데이터와 그 데이터를 수정하는 메서드를 담는다.
+    시나리오가 로드될 때 State 객체가 인스턴스화하며, Simulator/Host.py에 있다.
+
+    Host의 메서드는 대부분 데이터 수정용이다. Action(행동) 객체가 보통 State 객체를
+    거쳐 이 메서드들을 호출하므로, CybORG의 저수준 작업 대부분이 여기서 일어난다.
+    예외는 get_ephemeral_port로, 임의의 포트를 생성한다. 이는 새 세션이 만들어질 때
+    특히 중요하다. 보통 Red(공격 측) 활동으로 익스플로잇이 새 셸을 생성하고, 그
+    셸이 새 포트에서 수신 대기해야 할 때 발생한다.
+
+    주요 속성(Attributes):
+    - original_services: 시나리오 시작 시점의 서비스 목록. Restore(복원) 행동에 필요하다.
+    - os_type: Windows / Linux 호스트 구분.
+    - distribution: 리눅스 배포판 또는 윈도우 세대(XP, 7, 8, 10 등) 구분.
+    - version: OS 버전 구분. 예) Windows XP SP1, Ubuntu 18.04.
+    - kernel: 운영체제 커널 버전.
+    - patches: 운영체제에 적용된 패치 목록.
+    - hostname: 호스트 이름.
     """
 
     def __init__(
@@ -91,6 +112,16 @@ class Host(Entity):
         respond_to_ping : bool
         starting_position : np.array
         host_type : str
+
+        [한국어]
+        클래스를 인스턴스화한다.
+
+        Host는 이미지·시나리오 파일에 명시된 데이터 대부분을 담기 때문에 `__init__`
+        함수가 크다. OS 정보, 인터페이스, 사용자, 그룹, 파일, 프로세스, 세션, 서비스가
+        포함되며, 각각은 별도의 커스텀 자료형이다.
+
+        주요 매개변수:
+        - sessions: 에이전트 이름과 세션 객체의 딕셔너리.
         """
         super().__init__()
         self.original_services: Dict[str, Service] = {}
@@ -153,19 +184,30 @@ class Host(Entity):
         )
     
     def get_impact_count(self):
-        """Getter for impact count"""
+        """Getter for impact count
+
+        [한국어]
+        impact_count(Impact 타격 횟수)를 반환하는 getter.
+        """
         return self.impact_count
 
     def get_restore_count(self):
-        """Getter for restore count"""
+        """Getter for restore count
+
+        [한국어]
+        restore_count(Restore 복원 횟수)를 반환하는 getter.
+        """
         return self.restore_count
 
     def get_state(self):
         """Getter for observation dictionary.
-        
+
         Return
         ------
         observation : Dict[str, _]
+
+        [한국어]
+        관찰값(Observation) 딕셔너리를 반환하는 getter.
         """
         observation = {"os_type": self.os_type, "os_distribution": self.distribution, "os_version": self.version,
                        "os_patches": self.patches, "os_kernel": self.kernel, "hostname": self.hostname,
@@ -173,12 +215,16 @@ class Host(Entity):
         return observation
 
     def get_ephemeral_port(self):
-        """Getter for the host's ephemeral port 
-        
+        """Getter for the host's ephemeral port
+
         Returns
         -------
         port : int
             a random value between 49152 and 60000 based on the environment seed
+
+        [한국어]
+        호스트의 임시 포트(ephemeral port)를 반환하는 getter.
+        환경 시드(seed)에 따라 49152~60000 사이의 임의값을 반환한다.
         """
         port = self.np_random.integers(49152, 60000)
         if port in self.ephemeral_ports:
@@ -201,11 +247,15 @@ class Host(Entity):
 
     def add_user(self, username: str, password: str = None, password_hash_type: str = None):
         """Creates and returns a new user object.
-        
+
         Returns
         -------
         new_user : User
             new user object
+
+        [한국어]
+        새 User 객체를 생성해 반환한다. OS(Linux/Windows)에 따라 uid 할당과
+        패스워드 해시 방식이 달라진다. 이미 같은 사용자가 있으면 None을 반환한다.
         """
         if self.os_type == OperatingSystemType.LINUX:
             uid_list = [999]
@@ -213,6 +263,7 @@ class Host(Entity):
                 uid_list.append(user.uid)
             if username in uid_list:
                 return None
+            # 리눅스 useradd와 동일하게 기존 uid 최댓값 + 1을 새 uid로 부여한다.
             uid = max(uid_list) + 1  # Algorithm Tested in Linux: useradd
         elif self.os_type == OperatingSystemType.WINDOWS:
             uid_list = []
@@ -244,11 +295,19 @@ class Host(Entity):
         return new_user
 
     def get_user(self, username):
-        """Get user object by username """
+        """Get user object by username
+
+        [한국어]
+        username으로 User 객체를 찾아 반환한다.
+        """
         return next((user for user in self.users if username == user.username), None)
 
     def get_interface(self, name=None, cidr=None, ip_address=None, subnet_name=None):
-        """Get an interface with a selected name, subnet, or ip_address"""
+        """Get an interface with a selected name, subnet, or ip_address
+
+        [한국어]
+        name, subnet(cidr), ip_address 중 하나로 인터페이스를 찾아 반환한다.
+        """
         for interface in self.interfaces:
             name_match = name and interface.name == name
             cidr_match = cidr and interface.subnet == cidr
@@ -257,11 +316,19 @@ class Host(Entity):
                 return interface
 
     def get_process(self, pid):
-        """Get process by pid"""
+        """Get process by pid
+
+        [한국어]
+        pid로 Process 객체를 찾아 반환한다.
+        """
         return next((process for process in self.processes if process.pid == pid), None)
 
     def get_file(self, name: str, path=None):
-        """Get file by filename"""
+        """Get file by filename
+
+        [한국어]
+        파일 이름(필요 시 path까지)으로 File 객체를 찾아 반환한다.
+        """
         for file in self.files:
             if file.name == name and (not path or file.path == path):
                 return file
@@ -277,7 +344,11 @@ class Host(Entity):
         return user is not None
 
     def start_service(self, service_name: str):
-        """Starts a stopped service, no effect if service already started"""
+        """Starts a stopped service, no effect if service already started
+
+        [한국어]
+        멈춰 있는 서비스를 시작한다. 이미 시작된 서비스면 아무 효과가 없다.
+        """
         if service_name in self.services:
             if self.services[service_name]['process'] not in self.processes:
                 self.services[service_name]['active'] = True
@@ -289,11 +360,16 @@ class Host(Entity):
             return self.services[service_name]['process'], self.services[service_name]['session']
 
     # Fix bug - impact count does not increment
+    # 버그 수정 - impact_count가 증가하지 않던 문제 대응
     def increment_impact_count(self):
         self.impact_count += 1
-        
+
     def stop_service(self, service_name: str):
-        """Stops a started service, no effect if service already stopped"""
+        """Stops a started service, no effect if service already stopped
+
+        [한국어]
+        시작된 서비스를 멈춘다. 이미 멈춘 서비스면 아무 효과가 없다.
+        """
         if service_name in self.services:
             if self.services[service_name].active:
                 self.services[service_name].active = False
@@ -302,6 +378,9 @@ class Host(Entity):
     def add_service(self, service_name: str, service: Service) -> Service:
         """
         Adds a service to the host, and starts it
+
+        [한국어]
+        호스트에 서비스를 추가하고 시작한다.
         """
         if service_name not in self.services:
             self.services[service_name] = service
@@ -310,11 +389,19 @@ class Host(Entity):
     def is_using_port(self, port: int) -> bool:
         """
         Convenience method for checking if a host is using a port
+
+        [한국어]
+        호스트가 특정 포트를 사용 중인지 확인하는 편의 메서드.
         """
         return any(proc.is_using_port(port) for proc in self.processes)
     
     def create_backup(self):
-        """Creates a backup of the host by filling original class attributes with current class details"""
+        """Creates a backup of the host by filling original class attributes with current class details
+
+        [한국어]
+        현재 호스트 상태를 original_* 속성에 복사해 백업을 만든다.
+        나중에 restore()가 이 백업으로 호스트를 되돌린다.
+        """
         self.original_files = []
         if self.files is not None:
             for file in self.files:
@@ -329,6 +416,10 @@ class Host(Entity):
 
         self.original_processes = []
         if self.processes is not None:
+            # [설명] process.get_state()는 열린 포트마다 dict 1개를 돌려준다.
+            # 첫 dict(temp)를 프로세스 본체로 삼고 open_ports 리스트를 만든 뒤,
+            # 나머지 dict들은 포트 정보만 뽑아 open_ports에 합친다.
+            # 즉 여러 포트 항목을 프로세스 1개 dict로 접어 Process를 재구성한다.
             for process in self.processes:
                 temp = None
                 for p in process.get_state():
@@ -371,7 +462,12 @@ class Host(Entity):
         self.original_services = self._clone_services(self.services)
 
     def restore(self):
-        """Restores the host by filling current class details from 'original' class attributes"""
+        """Restores the host by filling current class details from 'original' class attributes
+
+        [한국어]
+        create_backup()이 저장해 둔 original_* 속성으로 현재 호스트 상태를 되돌린다.
+        Restore(복원) 행동이 이 메서드를 호출하며, 마지막에 restore_count를 1 증가시킨다.
+        """
         self.events = HostEvents()
         self.files = []
         if self.original_files is not None:
@@ -387,6 +483,8 @@ class Host(Entity):
 
         self.processes = []
         if self.original_processes is not None:
+            # [설명] create_backup()과 동일한 로직으로, 백업된 프로세스의 여러
+            # 포트 항목을 프로세스 1개 dict로 접어 Process를 재구성한다.
             for process in self.original_processes:
                 temp = None
                 for p in process.get_state():

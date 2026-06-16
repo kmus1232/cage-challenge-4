@@ -6,7 +6,12 @@ import CybORG.Shared.Enums as CyEnums
 
 
 class NetworkInterface:
-    """A class for storing network interface information """
+    """A class for storing network interface information
+
+    [한국어]
+    호스트의 네트워크 인터페이스 정보(인터페이스 이름, IP 주소, 서브넷 등)를
+    저장하는 클래스다.
+    """
 
     def __init__(self,
                  hostid: str = None,
@@ -22,6 +27,10 @@ class NetworkInterface:
         """Return network interface as dict.
 
         Keys of dict match arguments of Observation.add_interface_info()
+
+        [한국어]
+        네트워크 인터페이스 정보를 dict로 반환한다.
+        dict의 키는 Observation.add_interface_info()의 인자와 일치한다.
         """
         return {
             "hostid": self.hostid,
@@ -40,7 +49,12 @@ class NetworkInterface:
 
 
 class File:
-    """A dataclass for storing information about a single file """
+    """A dataclass for storing information about a single file
+
+    [한국어]
+    단일 파일의 정보(이름, 경로, 소유자/그룹 권한, 파일 타입, 버전 등)를
+    저장하는 데이터 클래스다.
+    """
 
     def __init__(self,
                  name: str,
@@ -92,6 +106,10 @@ class File:
         """Return network interface as dict.
 
         Keys of dict match arguments of Observation.add_file_info()
+
+        [한국어]
+        파일 정보를 dict로 반환한다.
+        dict의 키는 Observation.add_file_info()의 인자와 일치한다.
         """
         return {
             "path": self.path,
@@ -117,7 +135,12 @@ class File:
 
 
 class Credentials:
-    """A class for storing a set of credentials """
+    """A class for storing a set of credentials
+
+    [한국어]
+    하나의 자격 증명 묶음(사용자명, 비밀번호, 키 경로, 해시 등)을 저장하는
+    클래스다.
+    """
 
     def __init__(self,
                  username: str,
@@ -137,6 +160,10 @@ class Credentials:
         """Return credentials as dict
 
         Keys of dict match arguments of Observation.add_user_info()
+
+        [한국어]
+        자격 증명 정보를 dict로 반환한다.
+        dict의 키는 Observation.add_user_info()의 인자와 일치한다.
         """
         return {
             "username": self.username,
@@ -156,7 +183,12 @@ class Credentials:
 
 
 class OperatingSystemInfo:
-    """A class for storing information about the OS of a VM """
+    """A class for storing information about the OS of a VM
+
+    [한국어]
+    VM의 운영체제 정보(OS 타입, 배포판, 버전, 커널, 아키텍처, 패치)를 저장하는
+    클래스다.
+    """
 
     def __init__(self,
                  os_type: CyEnums.OperatingSystemType = None,
@@ -176,6 +208,10 @@ class OperatingSystemInfo:
         """Return OS info as dict
 
         Keys of dict match arguments of Observation.add_system_info()
+
+        [한국어]
+        OS 정보를 dict로 반환한다.
+        dict의 키는 Observation.add_system_info()의 인자와 일치한다.
         """
         return {
             "os_type": self.os_type,
@@ -196,7 +232,12 @@ class OperatingSystemInfo:
 
 
 class Image:
-    """An class for storing VM Image information """
+    """An class for storing VM Image information
+
+    [한국어]
+    VM 이미지 정보(이름, 서비스 목록, OS 정보, 자격 증명, root 사용자, 파일 등)를
+    저장하는 클래스다.
+    """
 
     def __init__(self,
                  name: str,
@@ -233,6 +274,20 @@ class Image:
         aux_info: dict, optional
             any extra Image specific information (e.g. MSF or Host monitoring
             info0 (Default=None)
+
+        [한국어]
+        파라미터 설명:
+        - name : 이미지 이름. 같은 OS 타입/배포판/버전을 가진 이미지를 사람이
+          읽기 쉽게 구분하기 위한 이름이다(예: 표준 ubuntu 14.04 vs
+          Metasploitable 3 ubuntu 14.04).
+        - services : 머신에서 실행 중인 서비스를 정의하는 Service 객체 목록.
+        - os_info : 이미지의 OS 정보(타입, 배포판, 버전).
+        - credentials : VM 이미지의 사용자별 자격 증명 매핑.
+        - root_user : 이미지의 root 사용자. 이 이미지로 인스턴스를 구성할 때
+          사용하는 자격 증명의 주인이 되는 사용자다.
+        - key_access : 인스턴스 SSH 접근을 키로만 제한하는지 여부.
+        - files : 이미지에 존재하는 것으로 알려진/지정된 파일들.
+        - aux_info : 이미지에 특화된 추가 정보(예: MSF나 호스트 모니터링 정보).
         """
         self.name = name
         self.services = services
@@ -262,9 +317,18 @@ class Image:
         -----
         If root_user attribute of image is not defined, this will return the
         first user in the image credentials dict
+
+        [한국어]
+        이미지의 root 사용자 자격 증명을 반환한다.
+        - 반환값: root 사용자의 Credentials.
+        - 예외: 유효한 자격 증명을 찾지 못하면 AttributeError를 던진다.
+        - 참고: root_user 속성이 정의돼 있지 않으면, 자격 증명 dict의 첫 번째
+          사용자를 반환한다.
         """
         if self.root_user is not None:
             return self.credentials[self.root_user]
+        # [설명] root_user가 지정되지 않은 경우, 자격 증명을 순회하며 키 접근만
+        # 허용(key_access)이 아니거나 키 경로(key_path)가 있는 첫 사용자를 root로 본다.
         for username, creds in self.credentials.items():
             if not self.key_access or creds.key_path is not None:
                 return creds
