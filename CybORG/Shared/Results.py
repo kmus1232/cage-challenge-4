@@ -10,12 +10,19 @@ class Results:
     """ Results class that is returned after each step
 
     Only the observation attribute is used in CC4.
-    
+
     Attributes
     ----------
     observation : Dict[str, _]
         observation data for the scenario host network
 
+    [한국어]
+    매 스텝(step)마다 환경이 반환하는 결과 클래스.
+    CC4(CAGE Challenge 4)에서는 observation 속성만 실제로 사용한다.
+
+    Attributes(속성)
+    - observation: Dict[str, _]
+        시나리오의 호스트 네트워크에 대한 관찰값(Observation) 데이터
     """
 
     def __init__(self,
@@ -31,7 +38,7 @@ class Results:
                  action=None,
                  action_name: str = None):
         """
-        
+
         Parameters
         ----------
         observation: Dict[str, _]
@@ -43,11 +50,26 @@ class Results:
         action_space
         error : Exception
             contains any exception produced by the environment
-        error_msg : str 
+        error_msg : str
             error message for the exception
         next_observation : Dict[str, _]
         action
         action_name: str
+
+        [한국어]
+        Parameters(매개변수)
+        - observation: Dict[str, _]
+            시나리오의 호스트 네트워크에 대한 관찰값(Observation) 데이터
+        - done: bool — 에피소드(Episode) 종료 여부
+        - reward: float — 해당 스텝의 보상
+        - info — 부가 정보
+        - parameter_mask — 행동(Action) 매개변수 마스크
+        - action_space — 행동 공간(Action Space)
+        - error: Exception — 환경이 발생시킨 예외(있을 경우)
+        - error_msg: str — 예외에 대한 에러 메시지
+        - next_observation: Dict[str, _] — 다음 스텝의 관찰값
+        - action — 수행된 행동(Action)
+        - action_name: str — 행동의 이름
         """
         self.observation = observation
         self.next_observation = next_observation
@@ -63,16 +85,26 @@ class Results:
         self.selection_masks = None
 
     def has_error(self):
-        """Return class attribute `error`"""
+        """Return class attribute `error`
+
+        [한국어]
+        error 속성이 존재하는지(None이 아닌지) 여부를 반환한다.
+        """
         return self.error is not None
 
     def copy(self):
         """Return a new instance of Results with the same class attributes.
-        
+
         Returns
         -------
         : Results
             a duplicate Results object
+
+        [한국어]
+        같은 속성값을 가진 새로운 Results 인스턴스를 반환한다.
+
+        observation/next_observation이 Observation 객체이면 해당 객체의
+        copy()로 복사하고, 그 외 타입이면 deepcopy로 깊은 복사한다.
         """
         copy_kwargs = {
             "done": self.done,
@@ -109,9 +141,11 @@ class Results:
         return "\n".join(output)
 
     def __eq__(self, other):
+        # [설명] 같은 타입이 아니면 다른 객체로 간주한다.
         if not isinstance(other, type(self)):
             return False
 
+        # [설명] 모든 속성을 키별로 비교해 하나라도 다르면 False를 반환한다.
         for k, v in self.__dict__.items():
             if k not in other.__dict__:
                 return False

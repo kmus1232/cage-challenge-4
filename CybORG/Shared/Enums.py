@@ -10,6 +10,7 @@ class TernaryEnum(enum.Enum):
 
     @classmethod
     def parse_bool(cls, state_bool):
+        # 파이썬 bool을 삼치 enum으로 변환한다. bool이 아니면 UNKNOWN으로 처리한다.
         if isinstance(state_bool, bool):
             if state_bool:
                 return cls.TRUE
@@ -20,6 +21,8 @@ class TernaryEnum(enum.Enum):
         return self.name
 
     def __eq__(self, other):
+        # [설명] bool과 직접 비교할 수 있게, bool이 들어오면 먼저 삼치 enum으로 바꾼 뒤
+        # value 기준으로 동등성을 판단한다. (예: TernaryEnum.TRUE == True 가 성립)
         if isinstance(other, bool):
             other = TernaryEnum.parse_bool(other)
         return isinstance(other, TernaryEnum) and self.value == other.value
@@ -67,13 +70,17 @@ class Architecture(enum.Enum):
         arch_map = {
             "x86": cls.x86,
             "x64": cls.x64,
-            "x86_64": cls.x64,  # Map both "x64" and "x86_64" to x64
+            "x86_64": cls.x64,  # Map both "x64" and "x86_64" to x64  / "x64"와 "x86_64" 둘 다 x64로 매핑한다
         }
         return arch_map.get(arch_string.lower(), cls.UNKNOWN)
 
 
 class OperatingSystemType(enum.Enum):
-    """An enum for representing the different possible Operating systems. """
+    """An enum for representing the different possible Operating systems.
+
+    [한국어]
+    가능한 운영체제 종류를 나타내는 enum. 여기서는 OS의 큰 분류(Windows / Linux)를 다룬다.
+    """
     UNKNOWN = enum.auto()
     WINDOWS = enum.auto()
     LINUX = enum.auto()
@@ -92,7 +99,12 @@ class OperatingSystemType(enum.Enum):
 
 
 class OperatingSystemDistribution(enum.Enum):
-    """An enum for representing the different possible Operating systems. """
+    """An enum for representing the different possible Operating systems.
+
+    [한국어]
+    가능한 운영체제 배포판(distribution)을 나타내는 enum. OperatingSystemType이 큰 분류라면,
+    이쪽은 Windows XP / Windows 10 / Ubuntu / Kali 등 구체적 배포판 단위를 다룬다.
+    """
     UNKNOWN = enum.auto()
     WINDOWS_XP = enum.auto()
     WINDOWS_SVR_2003 = enum.auto()
@@ -107,7 +119,7 @@ class OperatingSystemDistribution(enum.Enum):
     WINDOWS_SVR_2008SP1 = enum.auto()
     WINDOWS_SVR_2008R2 = enum.auto()
     WINDOWS_7SP1 = enum.auto()
-    DRONE_LINUX = enum.auto()  # TODO find correct distro
+    DRONE_LINUX = enum.auto()  # TODO find correct distro  / TODO 드론에 쓰이는 정확한 배포판을 확인할 것
 
     @classmethod
     def parse_string(cls, os_string):
@@ -147,7 +159,12 @@ class OperatingSystemDistribution(enum.Enum):
 
 
 class OperatingSystemVersion(enum.Enum):
-    """An enum for representing the different possible Operating systems. """
+    """An enum for representing the different possible Operating systems.
+
+    [한국어]
+    운영체제의 버전(version)을 나타내는 enum. 서비스팩(SP0~SP3)이나 Ubuntu/Kali의
+    세부 버전 번호처럼 같은 배포판 안에서의 버전 차이를 구분한다.
+    """
     UNKNOWN = enum.auto()
     SP0 = enum.auto()
     SP1 = enum.auto()
@@ -199,7 +216,12 @@ class OperatingSystemVersion(enum.Enum):
 
 
 class OperatingSystemKernelVersion(enum.Enum):
-    """An enum for representing the different possible Operating systems. """
+    """An enum for representing the different possible Operating systems.
+
+    [한국어]
+    운영체제의 커널(kernel) 버전을 나타내는 enum. 주로 Linux 커널 버전 문자열을
+    구분하는 데 쓰인다.
+    """
     UNKNOWN = enum.auto()
     L2_6_24 = enum.auto()
     L4_15_0_1057_AWS = enum.auto()
@@ -299,7 +321,12 @@ class ProcessName(enum.Enum):
 
 
 class ProcessType(enum.Enum):
-    """An enum for representing the different types of services. """
+    """An enum for representing the different types of services.
+
+    [한국어]
+    프로세스(서비스) 종류를 나타내는 enum. SSH, SMB, 웹서버 등 호스트에서 동작하는
+    서비스의 유형을 구분한다. (http/https는 모두 WEBSERVER로 매핑된다.)
+    """
     UNKNOWN = enum.auto()
     SSH = enum.auto()
     SVCHOST = enum.auto()
@@ -349,6 +376,7 @@ class ProcessType(enum.Enum):
 
 
 # Potentially split this into separate Enums for each ProcessType at later date
+# [설명] 추후 ProcessType별로 별도 enum으로 분리할 수 있다는 개발 메모.
 class ProcessVersion(enum.Enum):
     OPENSSH_1_3 = enum.auto()
     SVC10_0_17763_1 = enum.auto()
@@ -379,7 +407,11 @@ class ProcessVersion(enum.Enum):
 
 
 class TransportProtocol(enum.Enum):
-    """An enum for representing the different types of services. """
+    """An enum for representing the different types of services.
+
+    [한국어]
+    전송 계층 프로토콜(transport protocol)을 나타내는 enum. TCP/UDP를 구분한다.
+    """
     UNKNOWN = enum.auto()
     TCP = enum.auto()
     UDP = enum.auto()
@@ -417,7 +449,12 @@ class BuiltInGroups(enum.Enum):
 
 
 class SessionType(enum.Enum):
-    """An enum for representing the different types of sessions. """
+    """An enum for representing the different types of sessions.
+
+    [한국어]
+    세션(session) 종류를 나타내는 enum. SSH/셸 같은 일반 세션부터 Meterpreter,
+    Metasploit, Velociraptor, 그리고 Red/Blue/Green 역할별 세션까지 구분한다.
+    """
     UNKNOWN = enum.auto()
     SSH = enum.auto()
     SHELL = enum.auto()
@@ -511,7 +548,12 @@ class Path(enum.Enum):
 
 
 class ProcessState(enum.Enum):
-    """An enum for representing the different types of services. """
+    """An enum for representing the different types of services.
+
+    [한국어]
+    포트/프로세스의 상태를 나타내는 enum. open(열림)/closed(닫힘)/filtered(필터링됨)을
+    구분한다. (nmap 스캔 결과의 포트 상태 표기와 같은 맥락이다.)
+    """
     UNKNOWN = enum.auto()
     OPEN = enum.auto()
     CLOSED = enum.auto()
@@ -682,6 +724,9 @@ class QueryType(enum.Enum):
 ## The following code contains work of the United States Government and is not subject to domestic copyright protection under 17 USC § 105.
 ## Additionally, we waive copyright and related rights in the utilized code worldwide through the CC0 1.0 Universal public domain dedication.
 
+# [설명] enum.Flag라서 비트 OR(|)로 여러 값을 조합할 수 있다. Decoy(디코이, 미끼)가
+# 어떤 공격 단계를 흉내 내는지를 비트 플래그로 표현한다.
+# (ESCALATE=권한 상승 흉내, EXPLOIT=익스플로잇 흉내, SANDBOXING_EXPLOIT=샌드박싱 익스플로잇 흉내)
 class DecoyType(enum.Flag):
     NONE = 0
     ESCALATE = enum.auto()
