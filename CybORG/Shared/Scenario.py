@@ -1,5 +1,6 @@
 # Copyright DST Group. Licensed under the MIT license.
 import itertools
+import pprint
 import sys
 from typing import List, Dict, Tuple
 
@@ -265,4 +266,9 @@ class Scenario(CybORGLogger):
         return self.team_agents
 
     def __str__(self):
-        return pprint.pformat(self._scenario, depth=7)
+        # [버그 수정] 기존 코드는 정의되지 않은 self._scenario를 참조해
+        #            str(scenario) 호출 시 AttributeError가 발생했다.
+        #            실제 인스턴스 속성(agents/hosts/subnets 등) 전체를 보기 좋게
+        #            출력하도록 변경한다. Observation.__str__과 동일한 형식.
+        scenario_str = pprint.pformat(vars(self), depth=7)
+        return f"{self.__class__.__name__}:\n{scenario_str}"
