@@ -15,6 +15,7 @@ def test_stop_process():
     sim_controller = cyborg.environment_controller
 
     # get green agent
+    # Green 에이전트(정상 사용자)의 세션을 모은다
     valid_sessions: List[Session] = []
     for agent, sessions in sim_controller.state.sessions.items():
         if "green" in agent:
@@ -25,9 +26,10 @@ def test_stop_process():
     agent_interface = sim_controller.agent_interfaces[session.agent]
     host = sim_controller.state.hosts[session.hostname]
     pid = random.choice(list(host.services.values())).process
-    session.pid = pid # This is necessary for the sake of the test
+    session.pid = pid # This is necessary for the sake of the test  # 테스트를 위해 세션 pid를 지정해야 한다
     
     # Create action and execute
+    # 행동(Action)을 생성해 실행한다
     action = StopProcess(
         session=0,
         agent=agent_interface.agent_name,

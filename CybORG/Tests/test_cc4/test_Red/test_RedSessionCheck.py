@@ -8,7 +8,11 @@ from CybORG.Simulator.Actions.ConcreteActions.RemoveOtherSessions import RemoveO
 from CybORG.Simulator.State import State
 
 def add_sessions(state: State, agent_name, hostname):
-    """Add 3 sessions with a parent session"""
+    """Add 3 sessions with a parent session
+
+    [한국어]
+    부모 세션 1개를 포함해 세션 3개를 추가한다.
+    """
     state.add_session(Session(
         hostname=hostname, username='user', agent=agent_name, parent=None, session_type='shell',
         ident=0, pid=None
@@ -23,7 +27,11 @@ def add_sessions(state: State, agent_name, hostname):
     ))
 
 def remove_session(state, agent_name, ident):
-    """Remove the agents parent session"""
+    """Remove the agents parent session
+
+    [한국어]
+    해당 에이전트의 부모 세션을 제거한다.
+    """
     host_name = state.sessions[agent_name][0].hostname
     state.sessions[agent_name].pop(0)
 
@@ -38,8 +46,12 @@ def remove_session(state, agent_name, ident):
 
 def test_remove_sessions_action_and_red_agent_deactivation():
     """
-    Test that the action RemoveOtherSessions_AlwaysSuccessful will 
+    Test that the action RemoveOtherSessions_AlwaysSuccessful will
     result in the deactivation of the red agent.
+
+    [한국어]
+    RemoveOtherSessions_AlwaysSuccessful 행동(Action)이 Red 에이전트를
+    비활성화시키는지 검증한다.
     """
     esg = EnterpriseScenarioGenerator(blue_agent_class=SleepAgent, green_agent_class=SleepAgent,
                                         red_agent_class=SleepAgent)
@@ -49,6 +61,7 @@ def test_remove_sessions_action_and_red_agent_deactivation():
     red_agent_str='red_agent_1'
 
     # find the blue agent thats on the same subnet as red_agent_0
+    # red_agent_0과 같은 서브넷에 있는 Blue 에이전트를 찾는다
     for agent_name, agent in env.agent_interfaces.items():
         if 'blue' in agent_name:
             if agent.allowed_subnets==env.agent_interfaces[red_agent_str].allowed_subnets:
@@ -64,16 +77,22 @@ def test_remove_sessions_action_and_red_agent_deactivation():
 
     for i in range(30):
         # action steps
+        # 행동(Action) 스텝
         action = agent.get_action(obs, action_space)
         # add sessions for red_agent_1 on the same host as blue_agent_1 - to activate red_agent_1
-        if i==5: add_sessions(env.state, red_agent_str, hostname); 
+        # red_agent_1을 활성화하기 위해 blue_agent_1과 같은 호스트에 red_agent_1 세션을 추가한다
+        if i==5: add_sessions(env.state, red_agent_str, hostname);
         # remove the sessions from blue_agent_0 - to deactivate red_agent_1
+        # red_agent_1을 비활성화하기 위해 blue_agent_0의 세션을 제거한다
         if i==15: action = RemoveOtherSessions_AlwaysSuccessful(session=session_id, agent=blue_agent_str)
         # skip action check as RemoveAll isn't in the blue agents valid action space
+        # RemoveAll은 Blue 에이전트의 유효 행동 공간(Action Space)에 없으므로 행동 유효성 검사를 건너뛴다
         results = cyborg.step(action=action, agent=blue_agent_str, skip_valid_action_check=True)
         # check that after the action and step method, red_agent_1 is now active given the new sessions
+        # 행동과 step 메서드 실행 후, 새로 추가된 세션 덕분에 red_agent_1이 활성 상태인지 확인한다
         if i==5: assert env.agent_interfaces[red_agent_str].active==True and env.is_active(red_agent_str)==True
         # check that after the RemoveOtherSessions_AlwaysSuccessful action, red_agent_1 is no longer active
+        # RemoveOtherSessions_AlwaysSuccessful 행동 후 red_agent_1이 더 이상 활성 상태가 아닌지 확인한다
         if i==15: assert env.agent_interfaces[red_agent_str].active==False and env.is_active(red_agent_str)==False
 
         obs = results.observation
@@ -82,7 +101,11 @@ def test_remove_sessions_action_and_red_agent_deactivation():
 
 
 def test_red_agent_activation():
-    """Test that CybORG runs an episode with specific sessions added and remove"""
+    """Test that CybORG runs an episode with specific sessions added and remove
+
+    [한국어]
+    특정 세션을 추가·제거하는 상황에서 CybORG가 에피소드를 정상 실행하는지 검증한다.
+    """
     sg = EnterpriseScenarioGenerator(blue_agent_class=SleepAgent, green_agent_class=SleepAgent,
                                         red_agent_class=SleepAgent)
 
@@ -107,7 +130,11 @@ def test_red_agent_activation():
 
 
 def test_scenario_reset():
-    """Test the initial set up for red agent activation"""
+    """Test the initial set up for red agent activation
+
+    [한국어]
+    Red 에이전트 활성화를 위한 초기 설정 상태를 검증한다.
+    """
     sg = EnterpriseScenarioGenerator(blue_agent_class=SleepAgent, green_agent_class=SleepAgent,
                                      red_agent_class=SleepAgent)
 

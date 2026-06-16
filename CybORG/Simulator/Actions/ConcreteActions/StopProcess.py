@@ -14,6 +14,16 @@ class StopProcess(TargetedLocalAction):
             target_session (int): the session id of the target session
             pid (int): The PID of the process we want to stop
             stop_all (bool): The default (False) is to only stop processes if they have user-level access. True stops all.
+
+        [한국어]
+        호스트에서 프로세스를 중지하는 하위 행동(sub-action).
+
+        속성:
+            session (int): 출발지 세션의 세션 id
+            agent (str): 이 행동을 실행하는 에이전트의 이름
+            target_session (int): 대상 세션의 세션 id
+            pid (int): 중지하려는 프로세스의 PID
+            stop_all (bool): 기본값(False)은 사용자 수준 권한을 가진 프로세스만 중지한다. True면 전부 중지한다.
         """
     def __init__(self, session: int, agent: str, target_session: int, pid: int, stop_all: bool = False):
         super().__init__(session, agent, target_session)
@@ -27,6 +37,7 @@ class StopProcess(TargetedLocalAction):
             return Observation(False)
         if not self.stop_all and proc.user in ('root', 'SYSTEM'):
             # There should be a log here, but I'm not sure how to describe the logic.
+            # 여기에 로그가 있어야 하지만, 그 로직을 어떻게 기술할지 확실치 않다.
             return Observation(False)
         self.kill_process(state, target_host, proc)
         return Observation(True)

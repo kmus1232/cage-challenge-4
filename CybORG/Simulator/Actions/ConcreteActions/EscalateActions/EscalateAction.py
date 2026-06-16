@@ -3,6 +3,10 @@
 
 """
 pertaining to actions that escalate a session on a host, or occur failing that
+
+[한국어]
+호스트 위의 세션을 권한 상승(escalate)하는 행동(Action), 또는 그 시도가 실패할
+때 일어나는 행동과 관련된 모듈이다.
 """
 # pylint: disable=invalid-name
 

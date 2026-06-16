@@ -16,6 +16,7 @@ def compare_fundamental_observations(obs1: dict, obs2: dict, translation: dict):
     assert type(obs1) is dict
     assert type(obs2) is dict
     # TODO: Compare the sim and em outputs
+    # TODO: 시뮬레이션(sim)과 에뮬레이션(em) 출력을 비교한다
     # return False
     keys = copy.deepcopy(list(obs2.keys()))
     for host in keys:
@@ -78,8 +79,13 @@ def compare_fundamental_observations(obs1: dict, obs2: dict, translation: dict):
 
 
 #TODO create custom generators and use in tests
+#TODO 커스텀 생성기를 만들어 테스트에서 사용한다
 class CustomGenerator:
-    """Abstract class for generating specific 'random' behaviours"""
+    """Abstract class for generating specific 'random' behaviours
+
+    [한국어]
+    특정한 '난수' 동작을 생성하기 위한 추상 클래스.
+    """
     @staticmethod
     def choice(a, size=None, replace=True, p=None, axis=0, shuffle=True):
         raise NotImplementedError
@@ -102,7 +108,11 @@ class CustomGenerator:
 
 
 class AlwaysTrueGenerator(CustomGenerator):
-    """Class that always returns an always True 'random' value"""
+    """Class that always returns an always True 'random' value
+
+    [한국어]
+    항상 True에 해당하는 '난수' 값을 반환하는 클래스.
+    """
     @staticmethod
     def choice(a, size=None, replace=True, p=None, axis=0, shuffle=True):
         if size is None:
@@ -141,7 +151,11 @@ class AlwaysTrueGenerator(CustomGenerator):
 
 
 class AlwaysFalseGenerator(CustomGenerator):
-    """Class that always returns an always False 'random' value"""
+    """Class that always returns an always False 'random' value
+
+    [한국어]
+    항상 False에 해당하는 '난수' 값을 반환하는 클래스.
+    """
     @staticmethod
     def choice(a, size=None, replace=True, p=None, axis=0, shuffle=True):
         raise NotImplementedError

@@ -11,19 +11,29 @@ from CybORG.Simulator.Actions import DiscoverRemoteSystems, AggressiveServiceDis
 
 
 # Global test variables
+# 전역 테스트 변수
 AGENT_NAME = 'red_agent_0'
 S0_HOSTNAME = 'contractor_network_subnet_server_host_0'
 
 def test_impact_run_with_priv(cyborg = None):
     """Test that the Impact action will run through and succeed when given the correct conditions and privileges.
-    
+
     Conditions:
     - an OT Service is placed on server 0
     - the action history has the server correctly found and a root session added
 
     Privileges:
     - has a session on the host with root privileges
-    
+
+    [한국어]
+    올바른 조건과 권한이 주어졌을 때 Impact(타격) 행동(Action)이 정상 수행되어 성공하는지 검증한다.
+
+    조건:
+    - OT 서비스가 server 0에 배치되어 있다
+    - 행동 이력상 해당 서버를 정상 탐색했고 root 세션이 추가되어 있다
+
+    권한:
+    - 해당 호스트에 root 권한 세션을 보유한다
     """
     if cyborg == None:
         cyborg = create_sleep_cyborg()
@@ -35,7 +45,11 @@ def test_impact_run_with_priv(cyborg = None):
     assert result.observation['success'] == TernaryEnum.TRUE
 
 def test_impact_not_run_without_priv():
-    """Test that the Impact action fails with only a user level shell."""
+    """Test that the Impact action fails with only a user level shell.
+
+    [한국어]
+    사용자 수준 셸만 보유한 경우 Impact(타격) 행동(Action)이 실패하는지 검증한다.
+    """
 
     cyborg = create_sleep_cyborg()
     
@@ -46,7 +60,11 @@ def test_impact_not_run_without_priv():
     assert result.observation['success'] == TernaryEnum.FALSE
 
 def test_impact_causes_service_removal():
-    """Test that a successful Impact action results in the OT service being deactivated."""
+    """Test that a successful Impact action results in the OT service being deactivated.
+
+    [한국어]
+    Impact(타격) 행동(Action)이 성공하면 OT 서비스가 비활성화되는지 검증한다.
+    """
     cyborg = create_sleep_cyborg()
     test_impact_run_with_priv(cyborg)
 
@@ -57,7 +75,11 @@ def test_impact_causes_service_removal():
 
 
 def test_impact_fail_when_no_ot_service():
-    """Test that the Impact action fails when there is no OT service on the host."""
+    """Test that the Impact action fails when there is no OT service on the host.
+
+    [한국어]
+    호스트에 OT 서비스가 없을 때 Impact(타격) 행동(Action)이 실패하는지 검증한다.
+    """
     cyborg = create_sleep_cyborg()
     
     get_agent_with_shell(cyborg=cyborg)
@@ -68,8 +90,10 @@ def test_impact_fail_when_no_ot_service():
 
 
                 ### Enabling functions ###
+                ### 보조 함수 ###
 
 # Copy from conftest.py but could not get to run from this script
+# conftest.py에서 복사함. 다만 이 스크립트에서는 실행할 수 없었음
 def create_sleep_cyborg(seed: int = 123, steps: int = 100):
     ent_sg = EnterpriseScenarioGenerator(
         blue_agent_class=SleepAgent,

@@ -79,30 +79,52 @@ class GenericPzShim(ParallelEnv):
 
 
 # Shamelessly stolen from https://pettingzoo.farama.org/tutorials/sb3/connect_four/
+# 출처: PettingZoo의 connect_four SB3 튜토리얼 코드를 그대로 가져왔다.
 class SB3ActionMaskWrapper(pettingzoo.utils.BaseWrapper):
-    """Wrapper to allow PettingZoo environments to be used with SB3 illegal action masking."""
+    """Wrapper to allow PettingZoo environments to be used with SB3 illegal action masking.
+
+    [한국어]
+    PettingZoo 환경을 SB3의 비합법 행동 마스킹(illegal action masking)과 함께 쓸 수
+    있게 해주는 래퍼(Wrapper)다.
+    """
 
     def reset(self, seed=None, options=None):
         """Gymnasium-like reset function which assigns obs/action spaces to be the same for each agent.
 
         This is required as SB3 is designed for single-agent RL and doesn't expect obs/action spaces to be functions
+
+        [한국어]
+        Gymnasium 스타일의 reset 함수로, 모든 에이전트에 동일한 관찰값/행동 공간을
+        할당한다. SB3는 단일 에이전트 강화학습(RL)용으로 설계되어 관찰값/행동
+        공간이 함수 형태인 것을 가정하지 않으므로 이 처리가 필요하다.
         """
         super().reset(seed, options)
 
         # Strip the action mask out from the observation space
+        # 관찰값 공간에서 행동 마스크(action mask)를 떼어낸다.
         self.observation_space = super().observation_space(self.agent_selection)
         self.action_space = super().action_space(self.agent_selection)
 
         # Return initial observation, info (PettingZoo AEC envs do not by default)
+        # 초기 관찰값과 info를 반환한다. (PettingZoo AEC 환경은 기본적으로 반환하지 않음)
         return self.observe(self.agent_selection), {}
 
     def step(self, action):
-        """Gymnasium-like step function, returning observation, reward, termination, truncation, info."""
+        """Gymnasium-like step function, returning observation, reward, termination, truncation, info.
+
+        [한국어]
+        Gymnasium 스타일의 step 함수로, 관찰값·보상·종료(termination)·중단
+        (truncation)·info를 반환한다.
+        """
         super().step(action)
         return super().last()
 
     def action_mask(self):
-        """Separate function used in order to access the action mask."""
+        """Separate function used in order to access the action mask.
+
+        [한국어]
+        행동 마스크(action mask)에 접근하기 위한 별도 함수다.
+        """
         return self.infos[self.agent_selection]["action_mask"]
 
 
@@ -111,22 +133,34 @@ def mask_fn(env):
 
 
 # Shamelessly stolen from https://pettingzoo.farama.org/tutorials/sb3/connect_four/
+# 출처: PettingZoo의 connect_four SB3 튜토리얼 코드를 그대로 가져왔다.
 def train_action_mask(env_fn, steps=250000, seed=0, **env_kwargs):
-    """Train a single model to play as each agent in a zero-sum game environment using invalid action masking."""
+    """Train a single model to play as each agent in a zero-sum game environment using invalid action masking.
+
+    [한국어]
+    비합법 행동 마스킹(invalid action masking)을 사용해, 제로섬 게임 환경에서 각
+    에이전트 역할을 모두 수행하는 단일 모델을 학습시킨다.
+    """
     env = env_fn.env(**env_kwargs)
 
     print(f"Starting training on {str(env.metadata['name'])}.")
 
     # Custom wrapper to convert PettingZoo envs to work with SB3 action masking
+    # PettingZoo 환경을 SB3 행동 마스킹과 호환되게 변환하는 커스텀 래퍼(Wrapper)다.
     env = SB3ActionMaskWrapper(env)
 
     env.reset(seed=seed)  # Must call reset() in order to re-define the spaces
+    # 공간을 재정의하려면 reset()을 반드시 호출해야 한다.
 
     env = ActionMasker(env, mask_fn)  # Wrap to enable masking (SB3 function)
+    # 마스킹을 활성화하기 위해 래핑한다. (SB3 함수)
     # MaskablePPO behaves the same as SB3's PPO unless the env is wrapped
     # with ActionMasker. If the wrapper is detected, the masks are automatically
     # retrieved and used when learning. Note that MaskablePPO does not accept
     # a new action_mask_fn kwarg, as it did in an earlier draft.
+    # [한국어] 환경이 ActionMasker로 래핑되지 않으면 MaskablePPO는 SB3의 PPO와
+    # 동일하게 동작한다. 래퍼가 감지되면 학습 시 마스크를 자동으로 가져와
+    # 사용한다. 초기 초안과 달리 MaskablePPO는 action_mask_fn 인자를 받지 않는다.
     logdir = "logs/TrainingSB3_" + time.strftime("%Y%m%d_%H%M%S")
     model = MaskablePPO(
         MaskableActorCriticPolicy, env, verbose=1, tensorboard_log=logdir

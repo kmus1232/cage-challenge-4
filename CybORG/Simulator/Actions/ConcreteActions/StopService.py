@@ -11,6 +11,7 @@ class StopService(TargetedLocalAction):
 
     def execute_targeteted_local_action(self, state: State, target_host: Host) -> Observation:
         # find chosen service on host
+        # 호스트에서 지정된 서비스를 찾는다
         if self.service not in target_host.services:
             self.log(f"Could not find service '{self.service}' on host '{target_host.hostname}'.")
             return Observation(False)

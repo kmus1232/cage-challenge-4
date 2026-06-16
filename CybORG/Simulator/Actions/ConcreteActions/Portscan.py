@@ -13,7 +13,11 @@ class Portscan(RemoteAction):
         self.detection_rate = detection_rate
 
     def get_used_route(self, state: State, refresh = True, routing: bool = False) -> list:
-        """finds the route used by the action and returns the hostnames along that route"""
+        """finds the route used by the action and returns the hostnames along that route
+
+        [한국어]
+        이 행동(Action)이 사용하는 경로를 찾아 그 경로상의 호스트명 목록을 반환한다.
+        """
         if refresh or not self.route_designated:
             target = state.ip_addresses[self.ip_address]
             source = state.sessions[self.agent][self.session].hostname
@@ -46,6 +50,7 @@ class Portscan(RemoteAction):
         obs.set_success(True)
 
         # potential 'malicious' events are added to the target host to be detected by the Monitor action.
+        # [한국어] Monitor(모니터링) 행동(Action)이 탐지할 수 있도록, 잠재적 '악성' 이벤트를 대상 호스트에 추가한다.
         fixed_random_value=state.np_random.random()
         for process in target_host.processes:
             for conn in process.connections:

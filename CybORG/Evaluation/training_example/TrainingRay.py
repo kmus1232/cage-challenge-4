@@ -26,6 +26,8 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 def env_creator_CC4(env_config: dict):
+    # [설명] CC4 환경을 생성해 Ray RLlib에 등록하기 위한 팩토리 함수.
+    #        시나리오 생성기로 CybORG를 만든 뒤 EnterpriseMAE 래퍼(Wrapper)로 감싼다.
     sg = EnterpriseScenarioGenerator(
         blue_agent_class=SleepAgent,
         green_agent_class=EnterpriseGreenAgent,
@@ -43,6 +45,7 @@ POLICY_MAP = {f"blue_agent_{i}": f"Agent{i}" for i in range(NUM_AGENTS)}
 
 
 def policy_mapper(agent_id, episode, worker, **kwargs):
+    # [설명] 각 Blue 에이전트 id를 RLlib 정책(policy) 이름으로 매핑한다.
     return POLICY_MAP[agent_id]
 
 
@@ -53,6 +56,9 @@ env = env_creator_CC4({})
 
 # Note:     will allow different action space sizes but not different observation space sizes in one property
 #           current implementation may cause issues - seems to want all same size???
+# [한국어] 참고: 한 property 안에서 서로 다른 행동 공간(Action Space) 크기는 허용하지만
+#               서로 다른 관찰값(Observation) 공간 크기는 허용하지 않는다.
+#               현재 구현은 문제가 될 수 있다 - 모두 같은 크기를 요구하는 듯하다.
 algo_config = (
     DQNConfig().framework("torch")
     # .debugging(seed=0, log_level="ERROR")

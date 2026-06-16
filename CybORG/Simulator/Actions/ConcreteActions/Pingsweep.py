@@ -9,13 +9,21 @@ from CybORG.Simulator.State import State
 class Pingsweep(RemoteAction):
     """
     Concrete action that simulates a pingsweep, returning a list of active ip addresses on a subnet.
+
+    [한국어]
+    pingsweep를 모사하는 구체 행동(Action)으로, 서브넷에서 활성 상태인 IP 주소
+    목록을 반환한다.
     """
     def __init__(self, session: int, agent: str, subnet: IPv4Network):
         super().__init__(session, agent)
         self.subnet = subnet
 
     def get_used_route(self, state: State, refresh = True, routing = False) -> list:
-        """finds the route used by the action and returns the hostnames along that route"""
+        """finds the route used by the action and returns the hostnames along that route
+
+        [한국어]
+        이 행동(Action)이 사용하는 경로를 찾아 그 경로상의 호스트 이름들을 반환한다.
+        """
         if refresh or not self.route_designated:
             routes = []
             for ip_address in state.subnets[self.subnet].ip_addresses:
@@ -31,10 +39,14 @@ class Pingsweep(RemoteAction):
     def execute(self, state: State) -> Observation:
         """
         Executes a pingsweep in the simulator.
+
+        [한국어]
+        시뮬레이터에서 pingsweep를 실행한다.
         """
         obs = Observation()
 
         # Check the session running the code exists and is active.
+        # 코드를 실행하는 세션이 존재하고 활성 상태인지 확인한다.
         if self.session not in state.sessions[self.agent]:
             self.log(f"Session '{self.session}' not found for agent '{self.agent}'.")
             obs.set_success(False)
@@ -47,12 +59,15 @@ class Pingsweep(RemoteAction):
             return obs
 
         # Collect ip addresses
+        # IP 주소들을 수집한다.
         if self.subnet == lo_subnet:
             # Loopback address triviality
+            # 루프백 주소는 자명한 경우라 곧바로 처리한다.
             obs.set_success(True)
             obs.add_interface_info(hostid=str(lo_subnet), subnet=lo_subnet, ip_address=lo)
         else:
             # Check that a route exists to each ip that exists in the subnet
+            # 서브넷에 존재하는 각 IP로 가는 경로가 있는지 확인한다.
             for ip_addr in state.subnets[self.subnet].ip_addresses:
                 if state.hosts[state.ip_addresses[ip_addr]].respond_to_ping:
                     from_ip = self._get_originating_ip(state, from_host, ip_addr)

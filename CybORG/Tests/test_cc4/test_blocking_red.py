@@ -15,8 +15,13 @@ from CybORG.Shared.Session import Session
 from CybORG.Shared.Session import VelociraptorServer, RedAbstractSession
 
 """
-Testing that the AggressiveServiceDiscovery, StealthServiceDiscovery, and ExploitRemoteService are not successful 
+Testing that the AggressiveServiceDiscovery, StealthServiceDiscovery, and ExploitRemoteService are not successful
 when blue blocks traffic (BlockTrafficZone) between the source and target ips.
+
+[한국어]
+Blue 에이전트가 출발지·목적지 IP 사이의 트래픽을 차단(BlockTrafficZone)했을 때
+Red 에이전트의 AggressiveServiceDiscovery, StealthServiceDiscovery,
+ExploitRemoteService 행동(Action)이 성공하지 못함을 검증하는 테스트다.
 """
 
 RED_AGENT_NAME = 'red_agent_0'
@@ -35,6 +40,18 @@ def cyborg_with_root_shell_on_cns0() -> CybORG:
     -------
     cyborg : CybORG
         a cyborg environment with a root shell on cns0
+
+    [한국어]
+    Red 에이전트(red_agent_0)가 'contractor_network_subnet_server_host_0'(cns0)에
+    root 셸을 확보한 상태의 CybORG 환경을 만들어 반환하는 pytest fixture다.
+    원격 시스템 탐색 -> 네트워크 서비스 탐색 -> 익스플로잇(원격 서비스 공격) ->
+    권한 상승 순서로 행동(Action)을 실행해 셸을 얻는다.
+    위 Observation 예시는 마지막 PrivilegeEscalate(권한 상승)에서 얻은 관찰값이다.
+
+    Returns(반환값)
+    -------
+    cyborg : CybORG
+        cns0에 root 셸이 확보된 CybORG 환경
     """
     ent_sg = EnterpriseScenarioGenerator(
             blue_agent_class=SleepAgent,

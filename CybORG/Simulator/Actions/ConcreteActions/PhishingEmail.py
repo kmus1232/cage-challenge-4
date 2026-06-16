@@ -14,6 +14,15 @@ class PhishingEmail(RemoteAction):
     Attributes:
         ip_address (IPv4Address): IP address of the host that the green agent has a session on
 
+    [한국어]
+    Green 에이전트가 Red 에이전트의 '악성 이메일을 여는' 행위(Action)를 나타내는 Green 에이전트 행동.
+
+    이 행동은 Green 에이전트가 세션을 가진 호스트에 새로운 Red 셸 세션을 생성한다. 이로써 Red 에이전트는
+    그 시스템에 발판(foothold)을 확보한다.
+    셸 세션을 얻는 Red 에이전트는 Green 에이전트와 같은 서브넷에 위치해야 한다.
+
+    Attributes:
+        ip_address (IPv4Address): Green 에이전트가 세션을 가진 호스트의 IP 주소
     """
     def __init__(self, session: int, agent: str, ip_address: IPv4Address):
         """ Initalisation of PhishingEmail attributes
@@ -22,6 +31,14 @@ class PhishingEmail(RemoteAction):
             session (int): session id
             agent (str): agent name
             ip_address (IPv4Address): host IP address
+
+        [한국어]
+        PhishingEmail 속성 초기화.
+
+        Args:
+            session (int): 세션 id
+            agent (str): 에이전트 이름
+            ip_address (IPv4Address): 호스트 IP 주소
         """
         super().__init__(session=session, agent=agent)
         self.ip_address = ip_address
@@ -34,6 +51,15 @@ class PhishingEmail(RemoteAction):
         
         Returns:
             obs (Observation): the resulting observation space due to the action performed
+
+        [한국어]
+        PhishingEmail 행동을 실행한다.
+
+        Args:
+            state (State): 현재 시뮬레이션 State
+
+        Returns:
+            obs (Observation): 수행된 행동의 결과로 나온 관찰값(Observation) 공간
         """
         obs = Observation()
         self._create_new_session(obs, state)
@@ -58,6 +84,26 @@ class PhishingEmail(RemoteAction):
 
         Returns:
             obs (Observation): the changed Observation object, due to the action occurrance
+
+        [한국어]
+        Green 호스트 객체에 새로운 Red 셸 세션을 생성한다.
+
+        처리 절차:
+            1) ip_address로부터 Green 호스트 이름을 찾는다
+            2) Green 호스트에 이미 Red 셸 세션이 있는지 확인한다
+                - 있으면 호스트가 이미 '감염'된 상태이므로 행동을 종료한다
+            3) Green 호스트의 서브넷에 있는 Red 에이전트를 찾고 라우팅 가능 여부를 확인한다
+                - 없으면 라우팅 가능한 다른 서브넷을 고른다
+                    - 그래도 없으면 실패 관찰값(Observation)을 반환한다
+            4) 선택된 Red 에이전트의 세션을 Green 호스트에 새로 생성한다
+            5) 성공 Observation 객체에 세션 정보를 추가하고 반환한다
+
+        Args:
+            obs (Observation): 새 Observation 객체
+            state (State): 현재 시뮬레이션 상태
+
+        Returns:
+            obs (Observation): 행동 발생으로 변경된 Observation 객체
         """
 
         red_agent_src = ""
@@ -66,11 +112,13 @@ class PhishingEmail(RemoteAction):
         green_hostname = state.ip_addresses[self.ip_address]
 
         # Check if red already on host
+        # Red가 이미 호스트에 있는지 확인한다
         for agent, sid in state.hosts[green_hostname].sessions.items():
             if not sid == [] and 'red' in agent:
                 return obs.set_success(True)
 
         # Get red agent that 'sent' the phishing email
+        # 피싱 이메일을 '보낸' Red 에이전트를 찾는다
         for hostname, host in state.hosts.items():
             for agentname, sid in host.sessions.items():
                 if not sid == [] and 'red' in agentname:
@@ -92,6 +140,7 @@ class PhishingEmail(RemoteAction):
             
 
         # New red shell session created
+        # 새로운 Red 셸 세션을 생성한다
         new_session = RedAbstractSession(
             ident=None,
             pid=None,
@@ -109,5 +158,6 @@ class PhishingEmail(RemoteAction):
             'agent': new_session.agent}
         
         # Add the session details to the successful Observation object
+        # 성공한 Observation 객체에 세션 세부 정보를 추가한다
         obs.add_session_info(**session_info)
         return obs.set_success(True)
